@@ -1,14 +1,22 @@
 
 import React from 'react';
-import DatePicker from 'react-datepicker';
 
 export default function DateSelector({ selectedDate, setSelectedDate }) {
+  const handleDateChange = (e) => {
+    const newDate = new Date(e.target.value);
+    setSelectedDate(newDate);
+  };
+
+  const formatDate = (date) => {
+    return date.toISOString().split('T')[0];
+  };
+
   return (
     <div className="w-full max-w-xs mb-4">
-      <DatePicker
-        selected={selectedDate}
-        onChange={(date) => setSelectedDate(date)}
-        dateFormat="MMMM d, yyyy"
+      <input
+        type="date"
+        value={formatDate(selectedDate)}
+        onChange={handleDateChange}
         className="p-2 border rounded-md w-full"
       />
     </div>
