@@ -1,0 +1,95 @@
+import React, { useState, useEffect } from 'react';
+import Head from 'next/head';
+import DateSelector from '../components/DateSelector';
+import PanchangamDisplay from '../components/PanchangamDisplay';
+import { supabase } from '../lib/supabaseClient';
+
+export default function Home() {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [panchangamData, setPanchangamData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    fetchPanchangamData(selectedDate);
+  }, [selectedDate]);
+  
+  const fetchPanchangamData = async (date) => {
+    setLoading(true);
+    
+    // Format date for API
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    // Fetch from Supabase
+    const { data, error } = await supabase
+      .from('daily_panchangam')
+      .select('*')
+      .eq('date', formattedDate)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching panchangam:', error);
+      setLoading(false);
+      setPanchangamData(null);
+      return;
+    }
+    
+    if (!data) {
+      setLoading(false);
+      setPanchangamData(null);
+      return;
+    }
+    
+    // Get nakshatra yogam
+    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+    try {
+      const { data: yogamData, error: yogamError } = await supabase
+        .rpc('get_nakshatra_yogam', { 
+          nakshatra_name: data.main_nakshatra, 
+          day_name: dayOfWeek 
+        });
+      
+      if (yogamError) throw yogamError;
+      
+      setPanchangamData({...data, nakshatra_yogam: yogamData});
+    } catch (e) {
+      console.error('Error fetching nakshatra yogam:', e);
+      setPanchangamData(data); // Set without yogam data
+    }
+    
+    setLoading(false);
+  };
+  
+  return (
+    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
+      <Head>
+        <title>TamilJyotish Daily Panchangam</title>
+        <meta name="description" content="Daily panchangam information for auspicious timing" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      
+      <main className="px-4 py-10">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-3xl font-bold text-center text-indigo-800 mb-8">
+            ✨ TamilJyotish Daily Panchangam ✨
+          </h1>
+          
+          <div className="flex justify-center mb-8">
+            <DateSelector 
+              selectedDate={selectedDate} 
+              setSelectedDate={setSelectedDate} 
+            />
+          </div>
+          
+          <PanchangamDisplay 
+            panchangamData={panchangamData} 
+            loading={loading} 
+          />
+        </div>
+      </main>
+      
+      <footer className="mt-auto py-4 text-center text-gray-600">
+        <p>© {new Date().getFullYear()} TamilJyotish Daily</p>
+      </footer>
+    </div>
+  );
+}
