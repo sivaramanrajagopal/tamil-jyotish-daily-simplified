@@ -3,8 +3,8 @@
   "short_name": "பஞ்சாங்கம்",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#1a1a1a",
+  "background_color": "#FFD700",
+  "theme_color": "#FFC107",
   "icons": [
     {
       "src": "/icons/icon-192.png",

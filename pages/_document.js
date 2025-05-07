@@ -13,7 +13,7 @@ class MyDocument extends Document {
           />
           <meta name="apple-mobile-web-app-status-bar-style" content="black" />
           <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-          <meta name="theme-color" content="#1a1a1a" />
+          <meta name="theme-color" content="#FFC107" />
           <title>தமிழ் பஞ்சாங்கம் விஶ்வாவஸு 2025–2026</title>
         </Head>
         <body>
