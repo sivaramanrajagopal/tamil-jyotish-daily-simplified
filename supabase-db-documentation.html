@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panchangam Application - Supabase Database Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #1E40AF;
+            border-bottom: 2px solid #1E40AF;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2563EB;
+            margin-top: 30px;
+            border-bottom: 1px solid #2563EB;
+            padding-bottom: 5px;
+        }
+        h3 {
+            color: #3B82F6;
+            margin-top: 25px;
+        }
+        h4 {
+            color: #60A5FA;
+            margin-top: 20px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f9ff;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        .note {
+            background-color: #fff7ed;
+            border-left: 4px solid #fb923c;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+        .function {
+            background-color: #f0fdf4;
+            border-left: 4px solid #4ade80;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        .trigger {
+            background-color: #ecfeff;
+            border-left: 4px solid #22d3ee;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        .query {
+            background-color: #f1f5f9;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .toc {
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .toc ul {
+            padding-left: 20px;
+        }
+        .toc li {
+            margin-bottom: 5px;
+        }
+        a {
+            color: #2563EB;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Panchangam Application - Supabase Database Documentation</h1>
+    
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li>
+                <a href="#tables">Database Tables</a>
+                <ul>
+                    <li><a href="#daily-panchangam">daily_panchangam</a></li>
+                    <li><a href="#profiles">profiles</a></li>
+                    <li><a href="#quiz-attempts">quiz_attempts</a></li>
+                    <li><a href="#daily-streaks">daily_streaks</a></li>
+                    <li><a href="#nakshatra-progress">nakshatra_progress</a></li>
+                    <li><a href="#institutes">institutes</a></li>
+                    <li><a href="#institute-admins">institute_admins</a></li>
+                    <li><a href="#institute-members">institute_members</a></li>
+                    <li><a href="#nakshatra-yogam-mappings">nakshatra_yogam_mappings</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#functions">Functions</a>
+                <ul>
+                    <li><a href="#update-updated-at">update_updated_at_column</a></li>
+                    <li><a href="#handle-new-user">handle_new_user</a></li>
+                    <li><a href="#update-user-streak">update_user_streak</a></li>
+                    <li><a href="#update-user-xp">update_user_xp</a></li>
+                    <li><a href="#get-weekday-timings">get_weekday_timings</a></li>
+                    <li><a href="#get-nakshatra-yogam">get_nakshatra_yogam</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#triggers">Triggers</a>
+                <ul>
+                    <li><a href="#update-profiles-updated-at">update_profiles_updated_at</a></li>
+                    <li><a href="#update-nakshatra-progress-updated-at">update_nakshatra_progress_updated_at</a></li>
+                    <li><a href="#on-auth-user-created">on_auth_user_created</a></li>
+                    <li><a href="#on-daily-streak-created">on_daily_streak_created</a></li>
+                    <li><a href="#on-quiz-completed">on_quiz_completed</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#views">Views</a>
+                <ul>
+                    <li><a href="#leaderboards">leaderboards</a></li>
+                    <li><a href="#panchangam-with-yogam">panchangam_with_yogam</a></li>
+                </ul>
+            </li>
+            <li><a href="#security">Row Level Security Policies</a></li>
+            <li><a href="#indexes">Indexes</a></li>
+            <li><a href="#useful-queries">Useful Queries</a></li>
+        </ul>
+    </div>
+    
+    <div class="section" id="overview">
+        <h2>Overview</h2>
+        <p>This database supports a Hindu Panchangam (astrological calendar) application with functionality for:</p>
+        <ul>
+            <li>Daily astrological data storage and retrieval</li>
+            <li>User profile management with XP and streak tracking</li>
+            <li>Quizzes and learning progress tracking</li>
+            <li>Institute/school management for monetization</li>
+            <li>Row level security for multi-tenant data isolation</li>
+        </ul>
+        <p>The database leverages Supabase's auth system and implements a comprehensive permission model.</p>
+    </div>
+    
+    <div class="section" id="tables">
+        <h2>Database Tables</h2>
+        
+        <div id="daily-panchangam">
+            <h3>daily_panchangam</h3>
+            <p>Stores daily astrological information including planetary positions, nakshatras, tithis, and other Vedic astrological data.</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>id</td>
+                        <td>uuid</td>
+                        <td>Primary key, auto-generated</td>
+                    </tr>
+                    <tr>
+                        <td>date</td>
+                        <td>date</td>
+                        <td>Date of the panchangam entry (unique)</td>
+                    </tr>
+                    <tr>
+                        <td>vaara</td>
+                        <td>text</td>
+                        <td>Day of the week</td>
+                    </tr>
+                    <tr>
+                        <td>sunrise</td>
+                        <td>timestamptz</td>
+                        <td>Time of sunrise</td>
+                    </tr>
+                    <tr>
+                        <td>sunset</td>
+                        <td>timestamptz</td>
+                        <td>Time of sunset</td>
+                    </tr>
+                    <tr>
+                        <td>moonrise</td>
+                        <td>timestamptz</td>
+                        <td>Time of moonrise</td>
+                    </tr>
+                    <tr>
+                        <td>moonset</td>
+                        <td>timestamptz</td>
+                        <td>Time of moonset</td>
+                    </tr>
+                    <tr>
+                        <td>nakshatra</td>
+                        <td>jsonb</td>
+                        <td>Nakshatra details for the day</td>
+                    </tr>
+                    <tr>
+                        <td>tithi</td>
+                        <td>jsonb</td>
+                        <td>Tithi (lunar day) details</td>
+                    </tr>
+                    <tr>
+                        <td>karana</td>
+                        <td>jsonb</td>
+                        <td>Karana details</td>
+                    </tr>
+                    <tr>
+                        <td>yoga</td>
+                        <td>jsonb</td>
+                        <td>Yoga details</td>
+                    </tr>
+                    <tr>
+                        <td>main_nakshatra</td>
+                        <td>text</td>
+                        <td>Primary nakshatra for the day</td>
+                    </tr>
+                    <tr>
+                        <td>is_amavasai</td>
+                        <td>boolean</td>
+                        <td>New moon day flag</td>
+                    </tr>
+                    <tr>
+                        <td>is_pournami</td>
+                        <td>boolean</td>
+                        <td>Full moon day flag</td>
+                    </tr>
+                    <tr>
+                        <td>is_mythra_muhurtham</td>
+                        <td>boolean</td>
+                        <td>Auspicious time flag</td>
+                    </tr>
+                    <tr>
+                        <td>chandrashtama_for</td>
+                        <td>jsonb</td>
+                        <td>Chandrashtama details (inauspicious for listed rasis)</td>
+                    </tr>
+                    <tr>
+                        <td>cosmic_score</td>
+                        <td>int</td>
+                        <td>Calculated auspiciousness score</td>
+                    </tr>
+                    <tr>
+                        <td>user_specific_score</td>
+                        <td>jsonb</td>
+                        <td>Personalized auspiciousness scores</td>
+                    </tr>
+                    <tr>
+                        <td>tarabalam_type</td>
+                        <td>text</td>
+                        <td>Tarabalam classification</td>
+                    </tr>
+                    <tr>
+                        <td>rahu_kalam</td>
+                        <td>text</td>
+                        <td>Inauspicious time period (Rahu Kalam)</td>
+                    </tr>
+                    <tr>
+                        <td>yamagandam</td>
+                        <td>text</td>
+                        <td>Inauspicious time period (Yamagandam)</td>
+                    </tr>
+                    <tr>
+                        <td>kuligai</td>
+                        <td>text</td>
+                        <td>Inauspicious time period (Kuligai)</td>
+                    </tr>
+                    <tr>
+                        <td>abhijit_muhurta</td>
+                        <td>text</td>
+                        <td>Auspicious time period (Abhijit Muhurta)</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h4>Common Queries</h4>
+            
+            <div class="query">
+                <p><strong>Get panchangam for a specific date:</strong></p>
+                <pre>
+SELECT * FROM daily_panchangam WHERE date = '2025-05-09';</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Find dates when chandrashtama affects a specific nakshatra:</strong></p>
+                <pre>
+SELECT 
+  date, 
+  main_nakshatra, 
+  chandrashtama_for
+FROM 
+  daily_panchangam
+WHERE 
+  (date >= '2025-04-01' AND date <= '2025-06-30')
+  AND chandrashtama_for::text LIKE '%Rohini%'
+ORDER BY 
+  date ASC;</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Get the latest panchangam entries:</strong></p>
+                <pre>
+SELECT
+  id,
+  date,
+  vaara,
+  sunrise,
+  sunset,
+  moonrise,
+  moonset,
+  main_nakshatra,
+  nakshatra,
+  tithi,
+  karana,
+  yoga,
+  is_amavasai,
+  is_pournami,
+  cosmic_score
+FROM
+  daily_panchangam
+ORDER BY
+  date DESC
+LIMIT 10;</pre>
+            </div>
+        </div>
+        
+        <div id="profiles">
+            <h3>profiles</h3>
+            <p>Stores user profile information, including experience points, streaks, and completed nakshatras.</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>id</td>
+                        <td>UUID</td>
+                        <td>Primary key, references auth.users</td>
+                    </tr>
+                    <tr>
+                        <td>name</td>
+                        <td>TEXT</td>
+                        <td>User's display name</td>
+                    </tr>
+                    <tr>
+                        <td>email</td>
+                        <td>TEXT</td>
+                        <td>User's email address (required)</td>
+                    </tr>
+                    <tr>
+                        <td>xp</td>
+                        <td>INTEGER</td>
+                        <td>Experience points (default: 0)</td>
+                    </tr>
+                    <tr>
+                        <td>streak</td>
+                        <td>INTEGER</td>
+                        <td>Current login streak (default: 0)</td>
+                    </tr>
+                    <tr>
+                        <td>completed_nakshatras</td>
+                        <td>TEXT[]</td>
+                        <td>Array of completed nakshatras</td>
+                    </tr>
+                    <tr>
+                        <td>last_login</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of last login</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of profile creation</td>
+                    </tr>
+                    <tr>
+                        <td>updated_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of last update</td>
+                    </tr>
+                    <tr>
+                        <td>institute_id</td>
+                        <td>UUID</td>
+                        <td>Associated institute (optional)</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h4>Common Queries</h4>
+            
+            <div class="query">
+                <p><strong>Get top users by XP:</strong></p>
+                <pre>
+SELECT id, name, email, xp, streak
+FROM profiles
+ORDER BY xp DESC
+LIMIT 10;</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Get users with the longest streaks:</strong></p>
+                <pre>
+SELECT id, name, email, streak, last_login
+FROM profiles
+ORDER BY streak DESC
+LIMIT 10;</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Get users who completed the most nakshatras:</strong></p>
+                <pre>
+SELECT id, name, email, array_length(completed_nakshatras, 1) AS completed_count
+FROM profiles
+ORDER BY completed_count DESC NULLS LAST
+LIMIT 10;</pre>
+            </div>
+        </div>
+        
+        <div id="quiz-attempts">
+            <h3>quiz_attempts</h3>
+            <p>Records user quiz attempts and scores.</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>id</td>
+                        <td>UUID</td>
+                        <td>Primary key, auto-generated</td>
+                    </tr>
+                    <tr>
+                        <td>user_id</td>
+                        <td>UUID</td>
+                        <td>References profiles(id)</td>
+                    </tr>
+                    <tr>
+                        <td>quiz_type</td>
+                        <td>TEXT</td>
+                        <td>Type of quiz (enum: nakshatra_rasi, rasi_pada, etc.)</td>
+                    </tr>
+                    <tr>
+                        <td>score</td>
+                        <td>INTEGER</td>
+                        <td>User's score</td>
+                    </tr>
+                    <tr>
+                        <td>total_questions</td>
+                        <td>INTEGER</td>
+                        <td>Total number of questions</td>
+                    </tr>
+                    <tr>
+                        <td>duration_seconds</td>
+                        <td>INTEGER</td>
+                        <td>Time taken to complete quiz</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of quiz attempt</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h4>Common Queries</h4>
+            
+            <div class="query">
+                <p><strong>Get user's quiz history:</strong></p>
+                <pre>
+SELECT quiz_type, score, total_questions, 
+       (score::float / total_questions::float * 100)::integer AS percentage,
+       duration_seconds, created_at
+FROM quiz_attempts
+WHERE user_id = 'user-uuid-here'
+ORDER BY created_at DESC;</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Get average scores by quiz type:</strong></p>
+                <pre>
+SELECT 
+    quiz_type, 
+    COUNT(*) AS attempts,
+    ROUND(AVG(score)) AS avg_score,
+    ROUND(AVG(total_questions)) AS avg_questions,
+    ROUND(AVG(score::float / total_questions::float * 100)) AS avg_percentage
+FROM quiz_attempts
+GROUP BY quiz_type
+ORDER BY avg_percentage DESC;</pre>
+            </div>
+        </div>
+        
+        <div id="daily-streaks">
+            <h3>daily_streaks</h3>
+            <p>Tracks user login streaks for gamification.</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>id</td>
+                        <td>UUID</td>
+                        <td>Primary key, auto-generated</td>
+                    </tr>
+                    <tr>
+                        <td>user_id</td>
+                        <td>UUID</td>
+                        <td>References profiles(id)</td>
+                    </tr>
+                    <tr>
+                        <td>streak_date</td>
+                        <td>DATE</td>
+                        <td>Date of the streak entry</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of streak entry creation</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h4>Common Queries</h4>
+            
+            <div class="query">
+                <p><strong>Check if user has logged in today:</strong></p>
+                <pre>
+SELECT EXISTS (
+    SELECT 1 
+    FROM daily_streaks 
+    WHERE user_id = 'user-uuid-here' 
+    AND streak_date = CURRENT_DATE
+) AS has_logged_in_today;</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Get user's streak history:</strong></p>
+                <pre>
+SELECT streak_date
+FROM daily_streaks
+WHERE user_id = 'user-uuid-here'
+ORDER BY streak_date DESC;</pre>
+            </div>
+        </div>
+        
+        <div id="nakshatra-progress">
+            <h3>nakshatra_progress</h3>
+            <p>Tracks user learning progress for each nakshatra.</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>id</td>
+                        <td>UUID</td>
+                        <td>Primary key, auto-generated</td>
+                    </tr>
+                    <tr>
+                        <td>user_id</td>
+                        <td>UUID</td>
+                        <td>References profiles(id)</td>
+                    </tr>
+                    <tr>
+                        <td>nakshatra_id</td>
+                        <td>TEXT</td>
+                        <td>Identifier for the nakshatra</td>
+                    </tr>
+                    <tr>
+                        <td>proficiency_level</td>
+                        <td>INTEGER</td>
+                        <td>Level of proficiency (1-5)</td>
+                    </tr>
+                    <tr>
+                        <td>completed</td>
+                        <td>BOOLEAN</td>
+                        <td>Whether nakshatra is fully learned</td>
+                    </tr>
+                    <tr>
+                        <td>last_reviewed</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Last time user reviewed this nakshatra</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of record creation</td>
+                    </tr>
+                    <tr>
+                        <td>updated_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of last update</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h4>Common Queries</h4>
+            
+            <div class="query">
+                <p><strong>Get user's nakshatra learning progress:</strong></p>
+                <pre>
+SELECT 
+    nakshatra_id, 
+    proficiency_level, 
+    completed, 
+    last_reviewed
+FROM nakshatra_progress
+WHERE user_id = 'user-uuid-here'
+ORDER BY 
+    completed DESC, 
+    proficiency_level DESC, 
+    last_reviewed DESC;</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Find nakshatras due for review:</strong></p>
+                <pre>
+SELECT 
+    nakshatra_id, 
+    proficiency_level, 
+    last_reviewed
+FROM nakshatra_progress
+WHERE 
+    user_id = 'user-uuid-here' 
+    AND completed = false
+    AND last_reviewed < NOW() - INTERVAL '7 days'
+ORDER BY last_reviewed ASC;</pre>
+            </div>
+        </div>
+        
+        <div id="institutes">
+            <h3>institutes</h3>
+            <p>Manages educational organizations for monetization.</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>id</td>
+                        <td>UUID</td>
+                        <td>Primary key, auto-generated</td>
+                    </tr>
+                    <tr>
+                        <td>name</td>
+                        <td>TEXT</td>
+                        <td>Name of the institute</td>
+                    </tr>
+                    <tr>
+                        <td>contact_email</td>
+                        <td>TEXT</td>
+                        <td>Contact email address</td>
+                    </tr>
+                    <tr>
+                        <td>contact_name</td>
+                        <td>TEXT</td>
+                        <td>Contact person's name</td>
+                    </tr>
+                    <tr>
+                        <td>subscription_tier</td>
+                        <td>TEXT</td>
+                        <td>Subscription level (free, basic, premium, enterprise)</td>
+                    </tr>
+                    <tr>
+                        <td>max_members</td>
+                        <td>INTEGER</td>
+                        <td>Maximum allowed members</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of record creation</td>
+                    </tr>
+                    <tr>
+                        <td>updated_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of last update</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h4>Common Queries</h4>
+            
+            <div class="query">
+                <p><strong>Get institute details with member count:</strong></p>
+                <pre>
+SELECT 
+    i.id, 
+    i.name, 
+    i.subscription_tier,
+    i.max_members,
+    COUNT(im.id) AS current_members
+FROM 
+    institutes i
+LEFT JOIN 
+    institute_members im ON i.id = im.institute_id
+WHERE 
+    i.id = 'institute-uuid-here'
+GROUP BY 
+    i.id, i.name, i.subscription_tier, i.max_members;</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>List institutes by subscription tier:</strong></p>
+                <pre>
+SELECT 
+    subscription_tier,
+    COUNT(*) AS institute_count,
+    SUM(max_members) AS total_capacity
+FROM 
+    institutes
+GROUP BY 
+    subscription_tier
+ORDER BY 
+    CASE 
+        WHEN subscription_tier = 'free' THEN 1
+        WHEN subscription_tier = 'basic' THEN 2
+        WHEN subscription_tier = 'premium' THEN 3
+        WHEN subscription_tier = 'enterprise' THEN 4
+    END;</pre>
+            </div>
+        </div>
+        
+        <div id="institute-admins">
+            <h3>institute_admins</h3>
+            <p>Maps users to institutes as administrators.</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>id</td>
+                        <td>UUID</td>
+                        <td>Primary key, auto-generated</td>
+                    </tr>
+                    <tr>
+                        <td>user_id</td>
+                        <td>UUID</td>
+                        <td>References profiles(id)</td>
+                    </tr>
+                    <tr>
+                        <td>institute_id</td>
+                        <td>UUID</td>
+                        <td>References institutes(id)</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of record creation</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h4>Common Queries</h4>
+            
+            <div class="query">
+                <p><strong>Get all institutes a user administers:</strong></p>
+                <pre>
+SELECT 
+    i.id, 
+    i.name, 
+    i.subscription_tier,
+    i.created_at
+FROM 
+    institutes i
+JOIN 
+    institute_admins ia ON i.id = ia.institute_id
+WHERE 
+    ia.user_id = 'user-uuid-here';</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Get all administrators for an institute:</strong></p>
+                <pre>
+SELECT 
+    p.id, 
+    p.name, 
+    p.email,
+    ia.created_at AS admin_since
+FROM 
+    profiles p
+JOIN 
+    institute_admins ia ON p.id = ia.user_id
+WHERE 
+    ia.institute_id = 'institute-uuid-here';</pre>
+            </div>
+        </div>
+        
+        <div id="institute-members">
+            <h3>institute_members</h3>
+            <p>Maps users to institutes as members.</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>id</td>
+                        <td>UUID</td>
+                        <td>Primary key, auto-generated</td>
+                    </tr>
+                    <tr>
+                        <td>user_id</td>
+                        <td>UUID</td>
+                        <td>References profiles(id)</td>
+                    </tr>
+                    <tr>
+                        <td>institute_id</td>
+                        <td>UUID</td>
+                        <td>References institutes(id)</td>
+                    </tr>
+                    <tr>
+                        <td>join_date</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>When user joined the institute</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of record creation</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h4>Common Queries</h4>
+            
+            <div class="query">
+                <p><strong>Get all members of an institute:</strong></p>
+                <pre>
+SELECT 
+    p.id, 
+    p.name, 
+    p.email,
+    p.xp,
+    im.join_date
+FROM 
+    profiles p
+JOIN 
+    institute_members im ON p.id = im.user_id
+WHERE 
+    im.institute_id = 'institute-uuid-here'
+ORDER BY 
+    p.xp DESC;</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Check if institute has reached member limit:</strong></p>
+                <pre>
+SELECT 
+    i.name,
+    i.max_members,
+    COUNT(im.id) AS current_members,
+    i.max_members > COUNT(im.id) AS can_add_more_members
+FROM 
+    institutes i
+LEFT JOIN 
+    institute_members im ON i.id = im.institute_id
+WHERE 
+    i.id = 'institute-uuid-here'
+GROUP BY 
+    i.id, i.name, i.max_members;</pre>
+            </div>
+        </div>
+        
+        <div id="nakshatra-yogam-mappings">
+            <h3>nakshatra_yogam_mappings</h3>
+            <p>Maps nakshatras to their yogams (auspiciousness) for each day of the week.</p>
+            
+            <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>id</td>
+                        <td>SERIAL</td>
+                        <td>Primary key, auto-incremented</td>
+                    </tr>
+                    <tr>
+                        <td>nakshatra_name</td>
+                        <td>TEXT</td>
+                        <td>Tamil name of the nakshatra</td>
+                    </tr>
+                    <tr>
+                        <td>nakshatra_name_english</td>
+                        <td>TEXT</td>
+                        <td>English transliteration of nakshatra name</td>
+                    </tr>
+                    <tr>
+                        <td>sunday_yogam</td>
+                        <td>TEXT</td>
+                        <td>Yogam for Sunday</td>
+                    </tr>
+                    <tr>
+                        <td>monday_yogam</td>
+                        <td>TEXT</td>
+                        <td>Yogam for Monday</td>
+                    </tr>
+                    <tr>
+                        <td>tuesday_yogam</td>
+                        <td>TEXT</td>
+                        <td>Yogam for Tuesday</td>
+                    </tr>
+                    <tr>
+                        <td>wednesday_yogam</td>
+                        <td>TEXT</td>
+                        <td>Yogam for Wednesday</td>
+                    </tr>
+                    <tr>
+                        <td>thursday_yogam</td>
+                        <td>TEXT</td>
+                        <td>Yogam for Thursday</td>
+                    </tr>
+                    <tr>
+                        <td>friday_yogam</td>
+                        <td>TEXT</td>
+                        <td>Yogam for Friday</td>
+                    </tr>
+                    <tr>
+                        <td>saturday_yogam</td>
+                        <td>TEXT</td>
+                        <td>Yogam for Saturday</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Timestamp of record creation</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h4>Common Queries</h4>
+            
+            <div class="query">
+                <p><strong>Get yogam for a specific nakshatra and day:</strong></p>
+                <pre>
+SELECT 
+    nakshatra_name, 
+    nakshatra_name_english, 
+    sunday_yogam
+FROM 
+    nakshatra_yogam_mappings 
+WHERE 
+    nakshatra_name = 'ரோகிணி' OR nakshatra_name_english = 'Rohini';</pre>
+            </div>
+            
+            <div class="query">
+                <p><strong>Find nakshatras with auspicious yogam (amirtha yogam) on a specific day:</strong></p>
+                <pre>
+SELECT 
+    nakshatra_name, 
+    nakshatra_name_english
+FROM 
+    nakshatra_yogam_mappings 
+WHERE 
+    sunday_yogam = 'அமிர்தயோகம்'
+ORDER BY 
+    nakshatra_name;</pre>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section" id="functions">
+        <h2>Functions</h2>
+        
+        <div id="update-updated-at" class="function">
+            <h3>update_updated_at_column()</h3>
+            <p>Updates the <code>updated_at</code> column to the current timestamp whenever a record is updated.</p>
+            <pre>
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;</pre>
+        </div>
+        
+        <div id="handle-new-user" class="function">
+            <h3>handle_new_user()</h3>
+            <p>Creates a profile record when a new user signs up via Supabase Auth.</p>
+            <pre>
+CREATE OR REPLACE FUNCTION public.handle_new_user() 
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email)
+  VALUES (NEW.id, NEW.email);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;</pre>
+        </div>
+        
+        <div id="update-user-streak" class="function">
+            <h3>update_user_streak()</h3>
+            <p>Updates user streak count when they log in on consecutive days.</p>
+            <pre>
+CREATE OR REPLACE FUNCTION public.update_user_streak()
+RETURNS TRIGGER AS $$
+DECLARE
+  last_streak_date DATE;
+  current_streak INTEGER;
+BEGIN
+  -- Get the user's last streak date
+  SELECT MAX(streak_date) INTO last_streak_date
+  FROM public.daily_streaks
+  WHERE user_id = NEW.user_id
+    AND streak_date < CURRENT_DATE;
+  
+  -- Get current streak count
+  SELECT streak INTO current_streak
+  FROM public.profiles
+  WHERE id = NEW.user_id;
+  
+  -- If last streak was yesterday, increment streak
+  IF last_streak_date = (CURRENT_DATE - INTERVAL '1 day')::DATE THEN
+    UPDATE public.profiles
+    SET streak = streak + 1,
+        last_login = NOW()
+    WHERE id = NEW.user_id;
+  -- If more than 1 day gap, reset streak to 1
+  ELSIF last_streak_date IS NULL OR last_streak_date < (CURRENT_DATE - INTERVAL '1 day')::DATE THEN
+    UPDATE public.profiles
+    SET streak = 1,
+        last_login = NOW()
+    WHERE id = NEW.user_id;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;</pre>
+        </div>
+        
+        <div id="update-user-xp" class="function">
+            <h3>update_user_xp()</h3>
+            <p>Updates user experience points when they complete a quiz.</p>
+            <pre>
+CREATE OR REPLACE FUNCTION public.update_user_xp()
+RETURNS TRIGGER AS $$
+DECLARE
+  xp_gained INTEGER;
+BEGIN
+  -- Calculate XP based on score percentage
+  xp_gained := (NEW.score::FLOAT / NEW.total_questions::FLOAT * 100)::INTEGER;
+  
+  -- Update user XP
+  UPDATE public.profiles
+  SET xp = xp + xp_gained
+  WHERE id = NEW.user_id;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;</pre>
+        </div>
+        
+        <div id="get-weekday-timings" class="function">
+            <h3>get_weekday_timings(day_name TEXT)</h3>
+            <p>Returns the auspicious and inauspicious time periods for a given day of the week.</p>
+            <pre>
+CREATE OR REPLACE FUNCTION get_weekday_timings(day_name TEXT)
+RETURNS TABLE (rahu_kalam TEXT, yamagandam TEXT, kuligai TEXT, abhijit_muhurta TEXT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        CASE
+            WHEN day_name = 'Sunday' THEN '4:30 PM - 6:00 PM'
+            WHEN day_name = 'Monday' THEN '7:30 AM - 9:00 AM'
+            WHEN day_name = 'Tuesday' THEN '3:00 PM - 4:30 PM'
+            WHEN day_name = 'Wednesday' THEN '12:00 PM - 1:30 PM'
+            WHEN day_name = 'Thursday' THEN '1:30 PM - 3:00 PM'
+            WHEN day_name = 'Friday' THEN '10:30 AM - 12:00 PM'
+            WHEN day_name = 'Saturday' THEN '9:00 AM - 10:30 AM'
+        END as rahu_kalam,
+        CASE
+            WHEN day_name = 'Sunday' THEN '12:00 PM - 1:30 PM'
+            WHEN day_name = 'Monday' THEN '10:30 AM - 12:00 PM'
+            WHEN day_name = 'Tuesday' THEN '9:00 AM - 10:30 AM'
+            WHEN day_name = 'Wednesday' THEN '7:30 AM - 9:00 AM'
+            WHEN day_name = 'Thursday' THEN '6:00 AM - 7:30 AM'
+            WHEN day_name = 'Friday' THEN '3:00 PM - 4:30 PM'
+            WHEN day_name = 'Saturday' THEN '1:30 PM - 3:00 PM'
+        END as yamagandam,
+        CASE
+            WHEN day_name = 'Sunday' THEN '9:00 AM - 10:30 AM'
+            WHEN day_name = 'Monday' THEN '3:00 PM - 4:30 PM'
+            WHEN day_name = 'Tuesday' THEN '1:30 PM - 3:00 PM'
+            WHEN day_name = 'Wednesday' THEN '3:00 PM - 4:30 PM'
+            WHEN day_name = 'Thursday' THEN '4:30 PM - 6:00 PM'
+            WHEN day_name = 'Friday' THEN '9:00 AM - 10:30 AM'
+            WHEN day_name = 'Saturday' THEN '10:30 AM - 12:00 PM'
+        END as kuligai,
+        CASE
+            WHEN day_name = 'Sunday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Monday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Tuesday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Wednesday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Thursday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Friday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Saturday' THEN '11:48 AM - 12:36 PM'
+        END as abhijit_muhurta;
+END;
+$$ LANGUAGE plpgsql;</pre>
+        </div>
+        
+        <div id="get-nakshatra-yogam" class="function">
+            <h3>get_nakshatra_yogam(nakshatra_name TEXT, day_name TEXT)</h3>
+            <p>Returns the yogam (auspiciousness status) for a specific nakshatra on a given day.</p>
+            <pre>
+CREATE OR REPLACE FUNCTION get_nakshatra_yogam(nakshatra_name TEXT, day_name TEXT) 
+RETURNS TEXT AS $$
+DECLARE
+  yogam TEXT;
+  day_column TEXT;
+BEGIN
+  -- Convert day name to lowercase and remove any spaces or day suffix
+  day_name := LOWER(TRIM(day_name));
+  day_name := REGEXP_REPLACE(day_name, '\s+', '');
+  
+  -- Handle different formats of day names
+  IF day_name IN ('sun', 'sunday', 'ஞாயிறு') THEN
+    day_column := 'sunday_yogam';
+  ELSIF day_name IN ('mon', 'monday', 'திங்கள்') THEN
+    day_column := 'monday_yogam';
+  ELSIF day_name IN ('tue', 'tuesday', 'செவ்வாய்') THEN
+    day_column := 'tuesday_yogam';
+  ELSIF day_name IN ('wed', 'wednesday', 'புதன்') THEN
+    day_column := 'wednesday_yogam';
+  ELSIF day_name IN ('thu', 'thursday', 'வியாழன்') THEN
+    day_column := 'thursday_yogam';
+  ELSIF day_name IN ('fri', 'friday', 'வெள்ளி') THEN
+    day_column := 'friday_yogam';
+  ELSIF day_name IN ('sat', 'saturday', 'சனி') THEN
+    day_column := 'saturday_yogam';
+  ELSE
+    RETURN NULL;
+  END IF;
+  
+  EXECUTE format('
+    SELECT %I 
+    FROM nakshatra_yogam_mappings 
+    WHERE nakshatra_name = $1 OR nakshatra_name_english = $1
+    LIMIT 1', day_column)
+  INTO yogam
+  USING nakshatra_name;
+  
+  RETURN yogam;
+END;
+$$ LANGUAGE plpgsql;</pre>
+        </div>
+    </div>
+    
+    <div class="section" id="triggers">
+        <h2>Triggers</h2>
+        
+        <div id="update-profiles-updated-at" class="trigger">
+            <h3>update_profiles_updated_at</h3>
+            <p>Updates the <code>updated_at</code> column in the profiles table on every update.</p>
+            <pre>
+CREATE TRIGGER update_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();</pre>
+        </div>
+        
+        <div id="update-nakshatra-progress-updated-at" class="trigger">
+            <h3>update_nakshatra_progress_updated_at</h3>
+            <p>Updates the <code>updated_at</code> column in the nakshatra_progress table on every update.</p>
+            <pre>
+CREATE TRIGGER update_nakshatra_progress_updated_at
+BEFORE UPDATE ON public.nakshatra_progress
+FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();</pre>
+        </div>
+        
+        <div id="on-auth-user-created" class="trigger">
+            <h3>on_auth_user_created</h3>
+            <p>Creates a profile record when a new user signs up.</p>
+            <pre>
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();</pre>
+        </div>
+        
+        <div id="on-daily-streak-created" class="trigger">
+            <h3>on_daily_streak_created</h3>
+            <p>Updates user streak count when a streak record is inserted.</p>
+            <pre>
+CREATE TRIGGER on_daily_streak_created
+  AFTER INSERT ON public.daily_streaks
+  FOR EACH ROW EXECUTE PROCEDURE public.update_user_streak();</pre>
+        </div>
+        
+        <div id="on-quiz-completed" class="trigger">
+            <h3>on_quiz_completed</h3>
+            <p>Updates user XP when a quiz attempt is recorded.</p>
+            <pre>
+CREATE TRIGGER on_quiz_completed
+  AFTER INSERT ON public.quiz_attempts
+  FOR EACH ROW EXECUTE PROCEDURE public.update_user_xp();</pre>
+        </div>
+    </div>
+    
+    <div class="section" id="views">
+        <h2>Views</h2>
+        
+        <div id="leaderboards">
+            <h3>leaderboards</h3>
+            <p>Provides a view of user profiles sorted by XP for leaderboard displays.</p>
+            <pre>
+CREATE OR REPLACE VIEW public.leaderboards AS
+SELECT
+  id,
+  name,
+  email,
+  xp,
+  streak,
+  array_length(completed_nakshatras, 1) AS nakshatras_completed,
+  created_at
+FROM
+  public.profiles
+ORDER BY
+  xp DESC;</pre>
+        </div>
+        
+        <div id="panchangam-with-yogam">
+            <h3>panchangam_with_yogam</h3>
+            <p>Enriches the daily_panchangam data with calculated nakshatra yogam values.</p>
+            <pre>
+CREATE OR REPLACE VIEW panchangam_with_yogam AS
+SELECT
+  dp.*,
+  get_nakshatra_yogam(
+    dp.main_nakshatra, 
+    TO_CHAR(dp.date, 'Day')
+  ) AS nakshatra_yogam
+FROM
+  daily_panchangam dp;</pre>
+        </div>
+    </div>
+    
+    <div class="section" id="security">
+        <h2>Row Level Security Policies</h2>
+        <p>The database uses Supabase's Row Level Security (RLS) to control access to data. Here are the key policies:</p>
+        
+        <h3>Profiles Policies</h3>
+        <ul>
+            <li><strong>Public read access</strong>: Anyone can view profiles.</li>
+            <li><strong>Users can update their own profiles</strong>: Users can only update their own profile data.</li>
+            <li><strong>Users can insert their own profiles</strong>: Users can only create a profile for themselves.</li>
+        </ul>
+        
+        <h3>Quiz Attempts Policies</h3>
+        <ul>
+            <li><strong>Users can view their own quiz attempts</strong>: Users can only see their own quiz history.</li>
+            <li><strong>Users can insert their own quiz attempts</strong>: Users can only add quiz attempts for themselves.</li>
+        </ul>
+        
+        <h3>Daily Streaks Policies</h3>
+        <ul>
+            <li><strong>Users can view their own streaks</strong>: Users can only see their own streak data.</li>
+            <li><strong>Users can insert their own streaks</strong>: Users can only record streaks for themselves.</li>
+        </ul>
+        
+        <h3>Nakshatra Progress Policies</h3>
+        <ul>
+            <li><strong>Users can view their own nakshatra progress</strong>: Users can only see their own learning progress.</li>
+            <li><strong>Users can insert their own nakshatra progress</strong>: Users can only add progress for themselves.</li>
+            <li><strong>Users can update their own nakshatra progress</strong>: Users can only update their own progress.</li>
+        </ul>
+        
+        <h3>Institute Policies</h3>
+        <ul>
+            <li><strong>Institute admins can manage their institutes</strong>: Only institute admins can manage institute data.</li>
+        </ul>
+        
+        <h3>Institute Members Policies</h3>
+        <ul>
+            <li><strong>Institute admins can view and manage members</strong>: Only institute admins can manage member data.</li>
+            <li><strong>Users can view their own institute membership</strong>: Users can see which institutes they belong to.</li>
+        </ul>
+    </div>
+    
+    <div class="section" id="indexes">
+        <h2>Indexes</h2>
+        <p>The database uses several indexes to optimize query performance:</p>
+        
+        <h3>Profile Indexes</h3>
+        <pre>
+CREATE INDEX IF NOT EXISTS profiles_xp_idx ON public.profiles(xp DESC);
+CREATE INDEX IF NOT EXISTS profiles_streak_idx ON public.profiles(streak DESC);
+CREATE INDEX IF NOT EXISTS profiles_array_length_idx ON public.profiles(array_length(completed_nakshatras, 1) DESC NULLS LAST);</pre>
+        
+        <h3>Quiz Attempts Indexes</h3>
+        <pre>
+CREATE INDEX IF NOT EXISTS quiz_attempts_user_id_idx ON public.quiz_attempts(user_id);
+CREATE INDEX IF NOT EXISTS quiz_attempts_created_at_idx ON public.quiz_attempts(created_at DESC);</pre>
+        
+        <h3>Daily Streaks Indexes</h3>
+        <pre>
+CREATE INDEX IF NOT EXISTS daily_streaks_user_id_date_idx ON public.daily_streaks(user_id, streak_date);</pre>
+        
+        <h3>Nakshatra Progress Indexes</h3>
+        <pre>
+CREATE INDEX IF NOT EXISTS nakshatra_progress_user_id_idx ON public.nakshatra_progress(user_id);</pre>
+        
+        <h3>Nakshatra Yogam Mappings Indexes</h3>
+        <pre>
+CREATE INDEX IF NOT EXISTS idx_nakshatra_yogam_mappings_name ON nakshatra_yogam_mappings(nakshatra_name);
+CREATE INDEX IF NOT EXISTS idx_nakshatra_yogam_mappings_english_name ON nakshatra_yogam_mappings(nakshatra_name_english);</pre>
+        
+        <h3>Daily Panchangam Indexes</h3>
+        <pre>
+CREATE INDEX IF NOT EXISTS idx_daily_panchangam_main_nakshatra ON daily_panchangam(main_nakshatra);</pre>
+    </div>
+    
+    <div class="section" id="useful-queries">
+        <h2>Useful Queries</h2>
+        
+        <h3>Panchangam Queries</h3>
+        
+        <div class="query">
+            <p><strong>Get today's panchangam with yogam:</strong></p>
+            <pre>
+SELECT * FROM panchangam_with_yogam WHERE date = CURRENT_DATE;</pre>
+        </div>
+        
+        <div class="query">
+            <p><strong>Find auspicious days in a date range:</strong></p>
+            <pre>
+SELECT 
+    date, 
+    main_nakshatra, 
+    cosmic_score,
+    nakshatra_yogam
+FROM 
+    panchangam_with_yogam
+WHERE 
+    date BETWEEN '2025-05-01' AND '2025-05-31'
+    AND cosmic_score > 70  -- Adjust threshold as needed
+    AND nakshatra_yogam = 'அமிர்தயோகம்'
+ORDER BY 
+    cosmic_score DESC;</pre>
+        </div>
+        
+        <div class="query">
+            <p><strong>Get inauspicious time periods for next 7 days:</strong></p>
+            <pre>
+SELECT 
+    date, 
+    TRIM(TO_CHAR(date::DATE, 'Day')) AS day_of_week,
+    rahu_kalam,
+    yamagandam,
+    kuligai
+FROM 
+    daily_panchangam
+WHERE 
+    date >= CURRENT_DATE AND 
+    date < (CURRENT_DATE + INTERVAL '7 days')
+ORDER BY 
+    date;</pre>
+        </div>
+        
+        <h3>User Progress Queries</h3>
+        
+        <div class="query">
+            <p><strong>Get top 10 users by XP and streak:</strong></p>
+            <pre>
+SELECT 
+    id, 
+    name, 
+    email, 
+    xp, 
+    streak, 
+    array_length(completed_nakshatras, 1) AS nakshatras_completed
+FROM 
+    profiles
+ORDER BY 
+    xp DESC
+LIMIT 10;</pre>
+        </div>
+        
+        <div class="query">
+            <p><strong>Track user engagement over time:</strong></p>
+            <pre>
+SELECT 
+    DATE_TRUNC('day', created_at)::DATE AS activity_date,
+    COUNT(DISTINCT user_id) AS active_users
+FROM 
+    daily_streaks
+WHERE 
+    created_at >= NOW() - INTERVAL '30 days'
+GROUP BY 
+    activity_date
+ORDER BY 
+    activity_date;</pre>
+        </div>
+        
+        <div class="query">
+            <p><strong>Get quiz performance by type:</strong></p>
+            <pre>
+SELECT 
+    quiz_type,
+    COUNT(*) AS total_attempts,
+    ROUND(AVG(score)) AS avg_score,
+    ROUND(AVG(score::float / total_questions::float * 100)) AS avg_percentage
+FROM 
+    quiz_attempts
+GROUP BY 
+    quiz_type
+ORDER BY 
+    avg_percentage DESC;</pre>
+        </div>
+        
+        <h3>Institute Management Queries</h3>
+        
+        <div class="query">
+            <p><strong>Get institute member statistics:</strong></p>
+            <pre>
+SELECT 
+    i.name AS institute_name,
+    i.subscription_tier,
+    COUNT(im.id) AS member_count,
+    i.max_members,
+    ROUND(COUNT(im.id)::float / i.max_members::float * 100) AS capacity_used_percent,
+    MIN(im.join_date) AS oldest_member_joined,
+    MAX(im.join_date) AS newest_member_joined
+FROM 
+    institutes i
+LEFT JOIN 
+    institute_members im ON i.id = im.institute_id
+GROUP BY 
+    i.id, i.name, i.subscription_tier, i.max_members
+ORDER BY 
+    member_count DESC;</pre>
+        </div>
+        
+        <div class="query">
+            <p><strong>Find institutes approaching member limit:</strong></p>
+            <pre>
+SELECT 
+    i.name,
+    i.subscription_tier,
+    COUNT(im.id) AS current_members,
+    i.max_members,
+    i.max_members - COUNT(im.id) AS slots_remaining,
+    ROUND(COUNT(im.id)::float / i.max_members::float * 100) AS capacity_used_percent
+FROM 
+    institutes i
+LEFT JOIN 
+    institute_members im ON i.id = im.institute_id
+GROUP BY 
+    i.id, i.name, i.subscription_tier, i.max_members
+HAVING 
+    COUNT(im.id)::float / i.max_members::float >= 0.8
+ORDER BY 
+    capacity_used_percent DESC;</pre>
+        </div>
+    </div>
+</body>
+</html>

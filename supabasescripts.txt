@@ -1,0 +1,926 @@
+-- Optional: Create table if not already created
+create table if not exists daily_panchangam (
+  id uuid primary key default gen_random_uuid(),
+  date date unique,
+  vaara text,
+  sunrise timestamptz,
+  sunset timestamptz,
+  moonrise timestamptz,
+  moonset timestamptz,
+  nakshatra jsonb,
+  tithi jsonb,
+  karana jsonb,
+  yoga jsonb,
+  main_nakshatra text,
+  is_amavasai boolean default false,
+  is_pournami boolean default false,
+  is_mythra_muhurtham boolean default false,
+  chandrashtama_for jsonb
+);
+
+
+select column_name from information_schema.columns
+where table_name = 'daily_panchangam';
+
+drop table if exists daily_panchangam;
+
+create table daily_panchangam (
+  id uuid primary key default gen_random_uuid(),
+  date date unique,
+  vaara text,
+  sunrise timestamptz,
+  sunset timestamptz,
+  moonrise timestamptz,
+  moonset timestamptz,
+  nakshatra jsonb,
+  tithi jsonb,
+  karana jsonb,
+  yoga jsonb,
+  main_nakshatra text,
+  is_amavasai boolean default false,
+  is_pournami boolean default false,
+  is_mythra_muhurtham boolean default false,
+  chandrashtama_for jsonb
+);
+
+select column_name from information_schema.columns
+where table_name = 'daily_panchangam';
+
+alter table daily_panchangam add column cosmic_score int default 0;
+alter table daily_panchangam add column user_specific_score jsonb;
+
+ALTER TABLE daily_panchangam ADD COLUMN tarabalam_type text;
+
+SELECT column_name 
+FROM information_schema.columns 
+WHERE table_name = 'daily_panchangam';
+
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'daily_panchangam';
+select date, tithi, cosmic_score from daily_panchangam
+where date = '2025-04-21';
+
+
+SELECT
+  id,
+  date,
+  vaara,
+  sunrise,
+  sunset,
+  moonrise,
+  moonset,
+  main_nakshatra,
+  nakshatra,
+  tithi,
+  karana,
+  yoga,
+  is_amavasai,
+  is_pournami,
+  is_mythra_muhurtham,
+  chandrashtama_for,
+  cosmic_score,
+  user_specific_score,
+  tarabalam_type
+FROM
+  daily_panchangam
+ORDER BY
+  date DESC
+LIMIT 10;
+
+
+SELECT *
+FROM daily_panchangam
+ORDER BY id ASC
+LIMIT 1;
+
+SELECT 
+  date, 
+  main_nakshatra, 
+  chandrashtama_for
+FROM 
+  daily_panchangam
+WHERE 
+  (date >= '2025-04-01' AND date <= '2025-06-30')
+  AND chandrashtama_for::text LIKE '%Rohini%'
+ORDER BY 
+  date ASC;
+
+
+  SELECT column_name
+FROM information_schema.columns
+WHERE table_name = 'daily_panchangam';
+
+
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'daily_panchangam';
+
+SELECT date, chandrashtama_for, cosmic_score
+FROM daily_panchangam
+ORDER BY date DESC
+LIMIT 10;
+
+SELECT date, chandrashtama_for, cosmic_score
+FROM daily_panchangam
+WHERE date = '2025-04-26';
+
+
+
+-- Create profiles table for user data
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  name TEXT,
+  email TEXT NOT NULL,
+  xp INTEGER DEFAULT 0,
+  streak INTEGER DEFAULT 0,
+  completed_nakshatras TEXT[] DEFAULT '{}',
+  last_login TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create updated_at timestamp function
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for profiles table
+CREATE TRIGGER update_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+-- Create quiz attempts table
+CREATE TABLE IF NOT EXISTS public.quiz_attempts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  quiz_type TEXT NOT NULL CHECK (quiz_type IN ('nakshatra_rasi', 'rasi_pada', 'planetary_lords', 'd1_chart')),
+  score INTEGER NOT NULL,
+  total_questions INTEGER NOT NULL,
+  duration_seconds INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create daily streaks table
+CREATE TABLE IF NOT EXISTS public.daily_streaks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  streak_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Each user can only have one streak entry per day
+  UNIQUE(user_id, streak_date)
+);
+
+-- Create nakshatra progress table
+CREATE TABLE IF NOT EXISTS public.nakshatra_progress (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  nakshatra_id TEXT NOT NULL,
+  proficiency_level INTEGER DEFAULT 1 CHECK (proficiency_level BETWEEN 1 AND 5),
+  completed BOOLEAN DEFAULT FALSE,
+  last_reviewed TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Each user can only have one progress entry per nakshatra
+  UNIQUE(user_id, nakshatra_id)
+);
+
+-- Create institutes table for monetization
+CREATE TABLE IF NOT EXISTS public.institutes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  contact_email TEXT NOT NULL,
+  contact_name TEXT,
+  subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'basic', 'premium', 'enterprise')),
+  max_members INTEGER DEFAULT 10,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create institute admins table
+CREATE TABLE IF NOT EXISTS public.institute_admins (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  institute_id UUID REFERENCES public.institutes(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, institute_id)
+);
+
+-- Create institute members table
+CREATE TABLE IF NOT EXISTS public.institute_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  institute_id UUID REFERENCES public.institutes(id) ON DELETE CASCADE NOT NULL,
+  join_date TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, institute_id)
+);
+
+-- Add institute_id column to profiles
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS institute_id UUID REFERENCES public.institutes(id) ON DELETE SET NULL;
+
+-- Create trigger for nakshatra_progress table
+CREATE TRIGGER update_nakshatra_progress_updated_at
+BEFORE UPDATE ON public.nakshatra_progress
+FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+
+-- Create indexes for faster queries
+CREATE INDEX IF NOT EXISTS profiles_xp_idx ON public.profiles(xp DESC);
+CREATE INDEX IF NOT EXISTS profiles_streak_idx ON public.profiles(streak DESC);
+CREATE INDEX IF NOT EXISTS profiles_array_length_idx ON public.profiles(array_length(completed_nakshatras, 1) DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS quiz_attempts_user_id_idx ON public.quiz_attempts(user_id);
+CREATE INDEX IF NOT EXISTS quiz_attempts_created_at_idx ON public.quiz_attempts(created_at DESC);
+CREATE INDEX IF NOT EXISTS daily_streaks_user_id_date_idx ON public.daily_streaks(user_id, streak_date);
+CREATE INDEX IF NOT EXISTS nakshatra_progress_user_id_idx ON public.nakshatra_progress(user_id);
+
+-- Enable RLS on all tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quiz_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_streaks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.nakshatra_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.institutes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.institute_admins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.institute_members ENABLE ROW LEVEL SECURITY;
+
+-- Profiles policies
+CREATE POLICY "Public read access for profiles"
+  ON public.profiles FOR SELECT
+  USING (TRUE);
+
+CREATE POLICY "Users can update their own profiles"
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can insert their own profiles"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
+-- Quiz attempts policies
+CREATE POLICY "Users can view their own quiz attempts"
+  ON public.quiz_attempts FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own quiz attempts"
+  ON public.quiz_attempts FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Daily streaks policies
+CREATE POLICY "Users can view their own streaks"
+  ON public.daily_streaks FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own streaks"
+  ON public.daily_streaks FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Nakshatra progress policies
+CREATE POLICY "Users can view their own nakshatra progress"
+  ON public.nakshatra_progress FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own nakshatra progress"
+  ON public.nakshatra_progress FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own nakshatra progress"
+  ON public.nakshatra_progress FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Institute policies
+CREATE POLICY "Institute admins can manage their institutes"
+  ON public.institutes FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.institute_admins 
+      WHERE user_id = auth.uid() AND institute_id = id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.institute_admins 
+      WHERE user_id = auth.uid() AND institute_id = id
+    )
+  );
+
+-- Institute members policies
+CREATE POLICY "Institute admins can view and manage members"
+  ON public.institute_members FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.institute_admins 
+      WHERE user_id = auth.uid() AND institute_id = institute_members.institute_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.institute_admins 
+      WHERE user_id = auth.uid() AND institute_id = institute_members.institute_id
+    )
+  );
+
+CREATE POLICY "Users can view their own institute membership"
+  ON public.institute_members FOR SELECT
+  USING (auth.uid() = user_id);
+
+
+  -- Function to create a profile when a user signs up
+CREATE OR REPLACE FUNCTION public.handle_new_user() 
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email)
+  VALUES (NEW.id, NEW.email);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger the function every time a user is created
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- Function to update user streaks
+CREATE OR REPLACE FUNCTION public.update_user_streak()
+RETURNS TRIGGER AS $$
+DECLARE
+  last_streak_date DATE;
+  current_streak INTEGER;
+BEGIN
+  -- Get the user's last streak date
+  SELECT MAX(streak_date) INTO last_streak_date
+  FROM public.daily_streaks
+  WHERE user_id = NEW.user_id
+    AND streak_date < CURRENT_DATE;
+  
+  -- Get current streak count
+  SELECT streak INTO current_streak
+  FROM public.profiles
+  WHERE id = NEW.user_id;
+  
+  -- If last streak was yesterday, increment streak
+  IF last_streak_date = (CURRENT_DATE - INTERVAL '1 day')::DATE THEN
+    UPDATE public.profiles
+    SET streak = streak + 1,
+        last_login = NOW()
+    WHERE id = NEW.user_id;
+  -- If more than 1 day gap, reset streak to 1
+  ELSIF last_streak_date IS NULL OR last_streak_date < (CURRENT_DATE - INTERVAL '1 day')::DATE THEN
+    UPDATE public.profiles
+    SET streak = 1,
+        last_login = NOW()
+    WHERE id = NEW.user_id;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to update streak when a daily_streak record is inserted
+CREATE TRIGGER on_daily_streak_created
+  AFTER INSERT ON public.daily_streaks
+  FOR EACH ROW EXECUTE PROCEDURE public.update_user_streak();
+
+-- Function to update XP when a quiz is completed
+CREATE OR REPLACE FUNCTION public.update_user_xp()
+RETURNS TRIGGER AS $$
+DECLARE
+  xp_gained INTEGER;
+BEGIN
+  -- Calculate XP based on score percentage
+  xp_gained := (NEW.score::FLOAT / NEW.total_questions::FLOAT * 100)::INTEGER;
+  
+  -- Update user XP
+  UPDATE public.profiles
+  SET xp = xp + xp_gained
+  WHERE id = NEW.user_id;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to update XP when a quiz is completed
+CREATE TRIGGER on_quiz_completed
+  AFTER INSERT ON public.quiz_attempts
+  FOR EACH ROW EXECUTE PROCEDURE public.update_user_xp();
+
+
+  -- Create a view for leaderboards
+CREATE OR REPLACE VIEW public.leaderboards AS
+SELECT
+  id,
+  name,
+  email,
+  xp,
+  streak,
+  array_length(completed_nakshatras, 1) AS nakshatras_completed,
+  created_at
+FROM
+  public.profiles
+ORDER BY
+  xp DESC;
+
+-- Grant select on the view
+GRANT SELECT ON public.leaderboards TO anon, authenticated;
+
+-- Check if tables were created
+SELECT 
+  table_name, 
+  (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name) AS column_count
+FROM 
+  information_schema.tables t
+WHERE 
+  table_schema = 'public' 
+  AND table_type = 'BASE TABLE'
+ORDER BY 
+  table_name;
+
+-- Check if policies were created
+SELECT 
+  schemaname, 
+  tablename, 
+  policyname
+FROM 
+  pg_policies
+WHERE 
+  schemaname = 'public'
+ORDER BY 
+  tablename, 
+  policyname;
+
+-- First, check if the columns exist and add them if they don't
+DO $$
+BEGIN
+    -- Check and add rahu_kalam column
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'daily_panchangam' AND column_name = 'rahu_kalam') THEN
+        ALTER TABLE daily_panchangam ADD COLUMN rahu_kalam VARCHAR(20);
+    END IF;
+    
+    -- Check and add yamagandam column
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'daily_panchangam' AND column_name = 'yamagandam') THEN
+        ALTER TABLE daily_panchangam ADD COLUMN yamagandam VARCHAR(20);
+    END IF;
+    
+    -- Check and add kuligai column
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'daily_panchangam' AND column_name = 'kuligai') THEN
+        ALTER TABLE daily_panchangam ADD COLUMN kuligai VARCHAR(20);
+    END IF;
+    
+    -- Check and add abhijit_muhurta column
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'daily_panchangam' AND column_name = 'abhijit_muhurta') THEN
+        ALTER TABLE daily_panchangam ADD COLUMN abhijit_muhurta VARCHAR(20);
+    END IF;
+END
+$$;
+
+
+-- Create the function with consistent column names
+CREATE OR REPLACE FUNCTION get_weekday_timings(day_name TEXT)
+RETURNS TABLE (rahu_kalam TEXT, yamagandam TEXT, kuligai TEXT, abhijit_muhurta TEXT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        CASE
+            WHEN day_name = 'Sunday' THEN '4:30 PM - 6:00 PM'
+            WHEN day_name = 'Monday' THEN '7:30 AM - 9:00 AM'
+            WHEN day_name = 'Tuesday' THEN '3:00 PM - 4:30 PM'
+            WHEN day_name = 'Wednesday' THEN '12:00 PM - 1:30 PM'
+            WHEN day_name = 'Thursday' THEN '1:30 PM - 3:00 PM'
+            WHEN day_name = 'Friday' THEN '10:30 AM - 12:00 PM'
+            WHEN day_name = 'Saturday' THEN '9:00 AM - 10:30 AM'
+        END as rahu_kalam,
+        CASE
+            WHEN day_name = 'Sunday' THEN '12:00 PM - 1:30 PM'
+            WHEN day_name = 'Monday' THEN '10:30 AM - 12:00 PM'
+            WHEN day_name = 'Tuesday' THEN '9:00 AM - 10:30 AM'
+            WHEN day_name = 'Wednesday' THEN '7:30 AM - 9:00 AM'
+            WHEN day_name = 'Thursday' THEN '6:00 AM - 7:30 AM'
+            WHEN day_name = 'Friday' THEN '3:00 PM - 4:30 PM'
+            WHEN day_name = 'Saturday' THEN '1:30 PM - 3:00 PM'
+        END as yamagandam,
+        CASE
+            WHEN day_name = 'Sunday' THEN '9:00 AM - 10:30 AM'
+            WHEN day_name = 'Monday' THEN '3:00 PM - 4:30 PM'
+            WHEN day_name = 'Tuesday' THEN '1:30 PM - 3:00 PM'
+            WHEN day_name = 'Wednesday' THEN '3:00 PM - 4:30 PM'
+            WHEN day_name = 'Thursday' THEN '4:30 PM - 6:00 PM'
+            WHEN day_name = 'Friday' THEN '9:00 AM - 10:30 AM'
+            WHEN day_name = 'Saturday' THEN '10:30 AM - 12:00 PM'
+        END as kuligai,
+        CASE
+            WHEN day_name = 'Sunday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Monday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Tuesday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Wednesday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Thursday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Friday' THEN '11:48 AM - 12:36 PM'
+            WHEN day_name = 'Saturday' THEN '11:48 AM - 12:36 PM'
+        END as abhijit_muhurta;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+-- To update all dates in the table
+UPDATE daily_panchangam
+SET 
+    rahu_kalam = (SELECT rahu_kalam FROM get_weekday_timings(TO_CHAR(date::DATE, 'Day'))),
+    yamagandam = (SELECT yamagandam FROM get_weekday_timings(TO_CHAR(date::DATE, 'Day'))),
+    kuligai = (SELECT kuligai FROM get_weekday_timings(TO_CHAR(date::DATE, 'Day'))),
+    abhijit_muhurta = (SELECT abhijit_muhurta FROM get_weekday_timings(TO_CHAR(date::DATE, 'Day')));
+
+
+
+-- Print the timings for a sample date (e.g., May 3, 2025)
+SELECT 
+    date, 
+    TO_CHAR(date::DATE, 'Day') AS day_of_week,
+    rahu_kalam,
+    yamagandam,
+    kuligai,
+    abhijit_muhurta
+FROM 
+    daily_panchangam
+WHERE 
+    date = '2025-05-03';
+
+
+
+    -- Print the timings for all days in May 2025
+SELECT 
+    date, 
+    TO_CHAR(date::DATE, 'Day') AS day_of_week,
+    rahu_kalam,
+    yamagandam,
+    kuligai,
+    abhijit_muhurta
+FROM 
+    daily_panchangam
+WHERE 
+    date >= '2025-05-01' AND 
+    date < '2025-06-01'
+ORDER BY 
+    date;
+
+    -- Check what format the day name is in
+SELECT 
+    date, 
+    TO_CHAR(date::DATE, 'Day') AS day_with_spaces,
+    TRIM(TO_CHAR(date::DATE, 'Day')) AS day_trimmed
+FROM 
+    daily_panchangam
+WHERE 
+    date = '2025-05-03';
+
+    -- Update with trimmed day name to fix the NULL values
+UPDATE daily_panchangam
+SET 
+    rahu_kalam = (SELECT rahu_kalam FROM get_weekday_timings(TRIM(TO_CHAR(date::DATE, 'Day')))),
+    yamagandam = (SELECT yamagandam FROM get_weekday_timings(TRIM(TO_CHAR(date::DATE, 'Day')))),
+    kuligai = (SELECT kuligai FROM get_weekday_timings(TRIM(TO_CHAR(date::DATE, 'Day')))),
+    abhijit_muhurta = (SELECT abhijit_muhurta FROM get_weekday_timings(TRIM(TO_CHAR(date::DATE, 'Day'))))
+WHERE date = '2025-05-03';
+
+-- Verify the updated values
+SELECT 
+    date, 
+    TRIM(TO_CHAR(date::DATE, 'Day')) AS day_of_week,
+    rahu_kalam,
+    yamagandam,
+    kuligai,
+    abhijit_muhurta
+FROM 
+    daily_panchangam
+WHERE 
+    date = '2025-05-03';
+
+
+
+    -- Update all dates using TRIM to remove spaces
+UPDATE daily_panchangam
+SET 
+    rahu_kalam = (SELECT rahu_kalam FROM get_weekday_timings(TRIM(TO_CHAR(date::DATE, 'Day')))),
+    yamagandam = (SELECT yamagandam FROM get_weekday_timings(TRIM(TO_CHAR(date::DATE, 'Day')))),
+    kuligai = (SELECT kuligai FROM get_weekday_timings(TRIM(TO_CHAR(date::DATE, 'Day')))),
+    abhijit_muhurta = (SELECT abhijit_muhurta FROM get_weekday_timings(TRIM(TO_CHAR(date::DATE, 'Day'))));
+
+
+
+    -- Print the timings for the next 7 days
+SELECT 
+    date, 
+    TRIM(TO_CHAR(date::DATE, 'Day')) AS day_of_week,
+    rahu_kalam,
+    yamagandam,
+    kuligai,
+    abhijit_muhurta
+FROM 
+    daily_panchangam
+WHERE 
+    date >= CURRENT_DATE AND 
+    date < (CURRENT_DATE + INTERVAL '7 days')
+ORDER BY 
+    date;
+
+    -- Print random dates across different days of the week
+WITH random_dates AS (
+    SELECT date
+    FROM daily_panchangam
+    WHERE date >= '2025-01-01' AND date <= '2025-12-31'
+    ORDER BY RANDOM()
+    LIMIT 10
+)
+SELECT 
+    dp.date, 
+    TRIM(TO_CHAR(dp.date::DATE, 'Day')) AS day_of_week,
+    dp.rahu_kalam,
+    dp.yamagandam,
+    dp.kuligai,
+    dp.abhijit_muhurta
+FROM 
+    daily_panchangam dp
+JOIN 
+    random_dates rd ON dp.date = rd.date
+ORDER BY 
+    dp.date;
+
+
+
+    -- Print one sample date for each day of the week
+WITH day_samples AS (
+    SELECT 
+        date,
+        TRIM(TO_CHAR(date::DATE, 'Day')) AS day_of_week,
+        ROW_NUMBER() OVER (PARTITION BY TRIM(TO_CHAR(date::DATE, 'Day')) ORDER BY date) as rn
+    FROM 
+        daily_panchangam
+    WHERE 
+        date >= '2025-01-01' AND date <= '2025-12-31'
+)
+SELECT 
+    ds.date, 
+    ds.day_of_week,
+    dp.rahu_kalam,
+    dp.yamagandam,
+    dp.kuligai,
+    dp.abhijit_muhurta
+FROM 
+    day_samples ds
+JOIN 
+    daily_panchangam dp ON ds.date = dp.date
+WHERE 
+    ds.rn = 1
+ORDER BY 
+    CASE 
+        WHEN ds.day_of_week = 'Sunday' THEN 1
+        WHEN ds.day_of_week = 'Monday' THEN 2
+        WHEN ds.day_of_week = 'Tuesday' THEN 3
+        WHEN ds.day_of_week = 'Wednesday' THEN 4
+        WHEN ds.day_of_week = 'Thursday' THEN 5
+        WHEN ds.day_of_week = 'Friday' THEN 6
+        WHEN ds.day_of_week = 'Saturday' THEN 7
+    END;
+
+    SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'daily_panchangam';
+
+CREATE TABLE IF NOT EXISTS nakshatra_yogam_mappings (
+  id SERIAL PRIMARY KEY,
+  nakshatra_name TEXT,
+  nakshatra_name_english TEXT,
+  sunday_yogam TEXT,
+  monday_yogam TEXT,
+  tuesday_yogam TEXT,
+  wednesday_yogam TEXT,
+  thursday_yogam TEXT,
+  friday_yogam TEXT,
+  saturday_yogam TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+
+
+-- Clear existing data (if needed)
+DELETE FROM nakshatra_yogam_mappings;
+
+-- Insert all 27 nakshatras with their yogams for each day
+INSERT INTO nakshatra_yogam_mappings (
+  nakshatra_name, 
+  nakshatra_name_english,
+  sunday_yogam, 
+  monday_yogam, 
+  tuesday_yogam, 
+  wednesday_yogam, 
+  thursday_yogam, 
+  friday_yogam, 
+  saturday_yogam
+) VALUES
+  ('அசுவினி', 'Ashwini', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'அமிர்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்'),
+  ('பரணி', 'Bharani', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('காரத்திகை', 'Karthigai', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்'),
+  ('ரோகிணி', 'Rohini', 'சித்தயோகம்', 'அமிர்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'மரணயோகம்', 'அமிர்தயோகம்'),
+  ('மிருகசீரஷ', 'Mrigasira', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('திருவாதிரை', 'Thiruvadirai', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('புனர்பூசம்', 'Punarpusam', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('பூசம்', 'Pusam', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்'),
+  ('ஆயில்யம்', 'Ayilyam', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'மரணயோகம்'),
+  ('மகம்', 'Magam', 'மரணயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'மரணயோகம்', 'அமிர்தயோகம்'),
+  ('பூரம்', 'Puram', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('உத்திரம்', 'Uthiram', 'அமிர்தயோகம்', 'சுபயோகம்', 'அமிர்தயோகம்', 'அமிர்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'மரணயோகம்'),
+  ('ஹஸ்தம்', 'Hastham', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'மரணயோகம்'),
+  ('சித்திரை', 'Chithirai', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்'),
+  ('சுவாதி', 'Swathi', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்'),
+  ('விசாகம்', 'Visagam', 'மரணயோகம்', 'மரணயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('அனுஷம்', 'Anusham', 'மரணயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('கேட்டை', 'Kettai', 'மரணயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்'),
+  ('மூலம்', 'Moolam', 'அமிர்தயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்'),
+  ('பூராடம்', 'Pooradam', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('உத்திராடம்', 'Uthiradam', 'அமிர்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('திரவணம்', 'Thiravana', 'அமிர்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்'),
+  ('அவிட்டம்', 'Avittam', 'மரணயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('சதயம்', 'Sathayam', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்'),
+  ('பூரட்டாதி', 'Poorattathi', 'சித்தயோகம்', 'மரணயோகம்', 'மரணயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்'),
+  ('உத்திரட்டாதி', 'Uthirattathi', 'அமிர்தயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்'),
+  ('ரேவதி', 'Revathi', 'அமிர்தயோகம்', 'சித்தயோகம்', 'சித்தயோகம்', 'மரணயோகம்', 'சித்தயோகம்', 'அமிர்தயோகம்', 'மரணயோகம்');
+
+
+
+  CREATE OR REPLACE FUNCTION get_nakshatra_yogam(nakshatra_name TEXT, day_name TEXT) 
+RETURNS TEXT AS $$
+DECLARE
+  yogam TEXT;
+  day_column TEXT;
+BEGIN
+  -- Convert day name to lowercase and remove any spaces or day suffix
+  day_name := LOWER(TRIM(day_name));
+  day_name := REGEXP_REPLACE(day_name, '\s+', '');
+  
+  -- Handle different formats of day names
+  IF day_name IN ('sun', 'sunday', 'ஞாயிறு') THEN
+    day_column := 'sunday_yogam';
+  ELSIF day_name IN ('mon', 'monday', 'திங்கள்') THEN
+    day_column := 'monday_yogam';
+  ELSIF day_name IN ('tue', 'tuesday', 'செவ்வாய்') THEN
+    day_column := 'tuesday_yogam';
+  ELSIF day_name IN ('wed', 'wednesday', 'புதன்') THEN
+    day_column := 'wednesday_yogam';
+  ELSIF day_name IN ('thu', 'thursday', 'வியாழன்') THEN
+    day_column := 'thursday_yogam';
+  ELSIF day_name IN ('fri', 'friday', 'வெள்ளி') THEN
+    day_column := 'friday_yogam';
+  ELSIF day_name IN ('sat', 'saturday', 'சனி') THEN
+    day_column := 'saturday_yogam';
+  ELSE
+    RETURN NULL;
+  END IF;
+  
+  EXECUTE format('
+    SELECT %I 
+    FROM nakshatra_yogam_mappings 
+    WHERE nakshatra_name = $1 OR nakshatra_name_english = $1
+    LIMIT 1', day_column)
+  INTO yogam
+  USING nakshatra_name;
+  
+  RETURN yogam;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+CREATE OR REPLACE VIEW panchangam_with_yogam AS
+SELECT
+  dp.*,
+  get_nakshatra_yogam(
+    dp.main_nakshatra, 
+    TO_CHAR(dp.date, 'Day')
+  ) AS nakshatra_yogam
+FROM
+  daily_panchangam dp;
+
+
+  -- Create indexes for faster lookups
+CREATE INDEX IF NOT EXISTS idx_nakshatra_yogam_mappings_name 
+ON nakshatra_yogam_mappings(nakshatra_name);
+
+CREATE INDEX IF NOT EXISTS idx_nakshatra_yogam_mappings_english_name 
+ON nakshatra_yogam_mappings(nakshatra_name_english);
+
+-- If you frequently query by main_nakshatra
+CREATE INDEX IF NOT EXISTS idx_daily_panchangam_main_nakshatra 
+ON daily_panchangam(main_nakshatra);
+
+-- Get today's nakshatra yogam
+SELECT 
+  date, 
+  main_nakshatra,
+  get_nakshatra_yogam(main_nakshatra, TO_CHAR(date, 'Day')) as nakshatra_yogam
+FROM daily_panchangam
+WHERE date = CURRENT_DATE;
+
+-- Using the view (if you created it)
+SELECT * FROM panchangam_with_yogam WHERE date = CURRENT_DATE;
+
+-- Basic query to show all records
+SELECT * FROM nakshatra_yogam_mappings;
+
+SELECT * FROM daily_panchangam WHERE date = '2025-05-09';
+SELECT * FROM panchangam_with_yogam WHERE date = '2025-05-09';
+
+
+
+-- First, check if 'ஹஸ்தம்' exists in the table
+DO $$
+DECLARE
+  hasta_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO hasta_count FROM nakshatra_yogam_mappings WHERE nakshatra_name = 'ஹஸ்தம்';
+  
+  IF hasta_count = 0 THEN
+    RAISE EXCEPTION 'Source nakshatra ''ஹஸ்தம்'' not found in mapping table';
+  ELSIF hasta_count > 1 THEN
+    RAISE EXCEPTION 'Multiple entries found for ''ஹஸ்தம்'' in mapping table';
+  ELSE
+    -- Now check if 'அஸ்தம்' already exists (to prevent duplicates)
+    IF EXISTS (SELECT 1 FROM nakshatra_yogam_mappings WHERE nakshatra_name = 'அஸ்தம்') THEN
+      RAISE NOTICE 'Entry for ''அஸ்தம்'' already exists, skipping insert';
+    ELSE
+      -- Proceed with insert
+      INSERT INTO nakshatra_yogam_mappings (
+        nakshatra_name, 
+        nakshatra_name_english,
+        sunday_yogam, 
+        monday_yogam, 
+        tuesday_yogam, 
+        wednesday_yogam, 
+        thursday_yogam, 
+        friday_yogam, 
+        saturday_yogam
+      ) VALUES (
+        'அஸ்தம்',
+        'Hastham',
+        (SELECT sunday_yogam FROM nakshatra_yogam_mappings WHERE nakshatra_name = 'ஹஸ்தம்'),
+        (SELECT monday_yogam FROM nakshatra_yogam_mappings WHERE nakshatra_name = 'ஹஸ்தம்'),
+        (SELECT tuesday_yogam FROM nakshatra_yogam_mappings WHERE nakshatra_name = 'ஹஸ்தம்'),
+        (SELECT wednesday_yogam FROM nakshatra_yogam_mappings WHERE nakshatra_name = 'ஹஸ்தம்'),
+        (SELECT thursday_yogam FROM nakshatra_yogam_mappings WHERE nakshatra_name = 'ஹஸ்தம்'),
+        (SELECT friday_yogam FROM nakshatra_yogam_mappings WHERE nakshatra_name = 'ஹஸ்தம்'),
+        (SELECT saturday_yogam FROM nakshatra_yogam_mappings WHERE nakshatra_name = 'ஹஸ்தம்')
+      );
+      RAISE NOTICE 'Successfully added ''அஸ்தம்'' to mapping table';
+    END IF;
+  END IF;
+END $$;
+
+-- Update kuligai values based on the actual day of week from the date
+UPDATE daily_panchangam
+SET kuligai = CASE
+    WHEN EXTRACT(DOW FROM date) = 0 THEN '3:00 PM - 4:30 PM'    -- Sunday
+    WHEN EXTRACT(DOW FROM date) = 1 THEN '1:30 PM - 3:00 PM'    -- Monday
+    WHEN EXTRACT(DOW FROM date) = 2 THEN '12:00 PM - 1:30 PM'   -- Tuesday
+    WHEN EXTRACT(DOW FROM date) = 3 THEN '10:30 AM - 12:00 PM'  -- Wednesday
+    WHEN EXTRACT(DOW FROM date) = 4 THEN '9:00 AM - 10:30 AM'   -- Thursday
+    WHEN EXTRACT(DOW FROM date) = 5 THEN '7:30 AM - 9:00 AM'    -- Friday
+    WHEN EXTRACT(DOW FROM date) = 6 THEN '6:00 AM - 7:30 AM'    -- Saturday
+    ELSE kuligai  -- Keep existing value if no match
+END;
+
+
+-- First, preview what will be updated
+SELECT
+    date, 
+    vaara,
+    kuligai AS old_kuligai,
+    CASE
+        WHEN EXTRACT(DOW FROM date) = 0 THEN '3:00 PM - 4:30 PM'    -- Sunday
+        WHEN EXTRACT(DOW FROM date) = 1 THEN '1:30 PM - 3:00 PM'    -- Monday
+        WHEN EXTRACT(DOW FROM date) = 2 THEN '12:00 PM - 1:30 PM'   -- Tuesday
+        WHEN EXTRACT(DOW FROM date) = 3 THEN '10:30 AM - 12:00 PM'  -- Wednesday
+        WHEN EXTRACT(DOW FROM date) = 4 THEN '9:00 AM - 10:30 AM'   -- Thursday
+        WHEN EXTRACT(DOW FROM date) = 5 THEN '7:30 AM - 9:00 AM'    -- Friday
+        WHEN EXTRACT(DOW FROM date) = 6 THEN '6:00 AM - 7:30 AM'    -- Saturday
+        ELSE kuligai
+    END AS new_kuligai
+FROM daily_panchangam
+LIMIT 100;  -- Preview first 100 records
+
+-- If the preview looks good, run the update
+-- [Use Option 1 or Option 2 SQL here]
