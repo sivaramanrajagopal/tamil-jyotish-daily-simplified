@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import Head from 'next/head';
-import { supabase } from '../lib/supabaseClient';
+import React, { useState, useEffect } from "react";
+import Head from "next/head";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -15,17 +15,17 @@ export default function Home() {
     setLoading(true);
 
     // Format date for API
-    const formattedDate = date.toISOString().split('T')[0];
+    const formattedDate = date.toISOString().split("T")[0];
 
     // Fetch from Supabase
     const { data, error } = await supabase
-      .from('daily_panchangam')
-      .select('*')
-      .eq('date', formattedDate)
+      .from("daily_panchangam")
+      .select("*")
+      .eq("date", formattedDate)
       .single();
 
     if (error) {
-      console.error('Error fetching panchangam:', error);
+      console.error("Error fetching panchangam:", error);
       setLoading(false);
       setPanchangamData(null);
       return;
@@ -38,19 +38,21 @@ export default function Home() {
     }
 
     // Get nakshatra yogam
-    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
     try {
-      const { data: yogamData, error: yogamError } = await supabase
-        .rpc('get_nakshatra_yogam', { 
-          nakshatra_name: data.main_nakshatra, 
-          day_name: dayOfWeek 
-        });
+      const { data: yogamData, error: yogamError } = await supabase.rpc(
+        "get_nakshatra_yogam",
+        {
+          nakshatra_name: data.main_nakshatra,
+          day_name: dayOfWeek,
+        },
+      );
 
       if (yogamError) throw yogamError;
 
-      setPanchangamData({...data, nakshatra_yogam: yogamData});
+      setPanchangamData({ ...data, nakshatra_yogam: yogamData });
     } catch (e) {
-      console.error('Error fetching nakshatra yogam:', e);
+      console.error("Error fetching nakshatra yogam:", e);
       setPanchangamData(data); // Set without yogam data
     }
 
@@ -63,30 +65,104 @@ export default function Home() {
   };
 
   const formatDate = (date) => {
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   };
 
   // Format time function
   const formatTime = (timeStr) => {
-    if (!timeStr) return 'N/A';
+    if (!timeStr) return "N/A";
 
     const date = new Date(timeStr);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   // Get special day name
   const getSpecialDay = (data) => {
-    if (!data) return 'Normal Day';
+    if (!data) return "Normal Day";
 
-    if (data.is_pournami) return 'பௌர்ணமி (Full Moon Day)';
-    if (data.is_amavasai) return 'அமாவாசை (New Moon Day)';
-    if (data.is_ekadashi) return 'ஏகாதசி (Ekadashi)';
-    if (data.is_dwadashi) return 'துவாதசி (Dwadashi)';
-    if (data.is_ashtami) return 'அஷ்டமி (Ashtami)';
-    if (data.is_navami) return 'நவமி (Navami)';
-    if (data.is_trayodashi) return 'திரயோதசி (Trayodashi)';
-    if (data.is_sashti) return 'சஷ்டி (Sashti)';
-    return 'Normal Day';
+    if (data.is_pournami) return "பௌர்ணமி (Full Moon Day)";
+    if (data.is_amavasai) return "அமாவாசை (New Moon Day)";
+    if (data.is_ekadashi) return "ஏகாதசி (Ekadashi)";
+    if (data.is_dwadashi) return "துவாதசி (Dwadashi)";
+    if (data.is_ashtami) return "அஷ்டமி (Ashtami)";
+    if (data.is_navami) return "நவமி (Navami)";
+    if (data.is_trayodashi) return "திரயோதசி (Trayodashi)";
+    if (data.is_sashti) return "சஷ்டி (Sashti)";
+    return "Normal Day";
+  };
+
+  // Modified text-to-speech function with Tamil labels
+  const speakContent = () => {
+    // Check if speech synthesis is available
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      alert("Text-to-speech is not supported in your browser");
+      return;
+    }
+
+    if (!panchangamData) return;
+
+    // Stop any ongoing speech
+    window.speechSynthesis.cancel();
+
+    // Format date in Tamil style
+    const today = new Date(panchangamData.date);
+    const day = today.getDate();
+    const month = today.getMonth() + 1;
+    const year = today.getFullYear();
+    const formattedDate = `${day} ${month} ${year}`;
+
+    // Create the text to speak with Tamil labels
+    let textToSpeak = `
+      இன்றைய பஞ்சாங்கம் ${formattedDate}.
+      கிழமை: ${panchangamData.vaara}.
+      நட்சத்திரம்: ${panchangamData.main_nakshatra || ""}.
+      நட்சத்திர யோகம்: ${panchangamData.nakshatra_yogam || ""}.
+      திதி: ${(panchangamData.tithi && getFirstItem(panchangamData.tithi)?.name) || ""}.
+      ராகு காலம்: ${panchangamData.rahu_kalam || ""}.
+      எமகண்டம்: ${panchangamData.yamagandam || ""}.
+      குளிகை: ${panchangamData.kuligai || ""}.
+      சந்திராஷ்டமம்: ${convertChandrashtamaToTamil(panchangamData.chandrashtama_for) || ""}.
+      விசேஷ நாள்: ${getSpecialDay(panchangamData)}.
+    `;
+
+    // Create speech utterance with Tamil language
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = "ta-IN"; // Set Tamil language
+    utterance.rate = 0.8; // Slower rate for better pronunciation
+
+    // Try to find a Tamil voice
+    try {
+      // Wait a moment to make sure voices are loaded
+      setTimeout(() => {
+        const voices = window.speechSynthesis.getVoices();
+        console.log(
+          "Available voices:",
+          voices.map((v) => `${v.name} (${v.lang})`),
+        );
+
+        // Look for Tamil voice
+        const tamilVoice = voices.find(
+          (voice) =>
+            voice.lang.includes("ta") ||
+            voice.name.includes("Tamil") ||
+            voice.name.includes("ta-IN"),
+        );
+
+        if (tamilVoice) {
+          console.log("Using Tamil voice:", tamilVoice.name);
+          utterance.voice = tamilVoice;
+        } else {
+          console.log("No Tamil voice found, using default voice");
+        }
+
+        // Start speaking
+        window.speechSynthesis.speak(utterance);
+      }, 100);
+    } catch (e) {
+      console.error("Error setting voice:", e);
+      // Fallback if there's an error
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   // Properly parse JSONB fields
@@ -94,14 +170,14 @@ export default function Home() {
     if (!field) return null;
 
     // If it's already an array or object, return it
-    if (typeof field === 'object') return field;
+    if (typeof field === "object") return field;
 
     // If it's a string, try to parse it
-    if (typeof field === 'string') {
+    if (typeof field === "string") {
       try {
         return JSON.parse(field);
       } catch (e) {
-        console.error('Error parsing JSON string:', e);
+        console.error("Error parsing JSON string:", e);
         return null;
       }
     }
@@ -121,7 +197,7 @@ export default function Home() {
     }
 
     // If it's an object that might represent an array
-    if (typeof parsed === 'object' && parsed !== null) {
+    if (typeof parsed === "object" && parsed !== null) {
       // Try to find the first item (could be at index 0 or with key "0")
       if (parsed[0]) return parsed[0];
 
@@ -135,60 +211,65 @@ export default function Home() {
 
   // Map for English to Tamil nakshatra names
   const nakshatraEnglishToTamil = {
-    'Ashwini': 'அசுவினி',
-    'Bharani': 'பரணி',
-    'Krittika': 'கார்த்திகை',
-    'Rohini': 'ரோகிணி',
-    'Mrigasira': 'மிருகசீரிஷம்',
-    'Ardra': 'திருவாதிரை',
-    'Punarvasu': 'புனர்பூசம்',
-    'Pushya': 'பூசம்',
-    'Ashlesha': 'ஆயில்யம்',
-    'Magha': 'மகம்',
-    'Purva Phalguni': 'பூரம்',
-    'Uttara Phalguni': 'உத்திரம்',
-    'Hasta': 'ஹஸ்தம்',
-    'Chitra': 'சித்திரை',
-    'Swati': 'சுவாதி',
-    'Vishakha': 'விசாகம்',
-    'Anuradha': 'அனுஷம்',
-    'Jyeshtha': 'கேட்டை',
-    'Mula': 'மூலம்',
-    'Purva Ashadha': 'பூராடம்',
-    'Uttara Ashadha': 'உத்திராடம்',
-    'Shravana': 'திருவோணம்',
-    'Dhanishta': 'அவிட்டம்',
-    'Shatabhisha': 'சதயம்',
-    'Purva Bhadrapada': 'பூரட்டாதி',
-    'Uttara Bhadrapada': 'உத்திரட்டாதி',
-    'Revati': 'ரேவதி'
+    Ashwini: "அசுவினி",
+    Bharani: "பரணி",
+    Krittika: "கார்த்திகை",
+    Rohini: "ரோகிணி",
+    Mrigasira: "மிருகசீரிஷம்",
+    Ardra: "திருவாதிரை",
+    Punarvasu: "புனர்பூசம்",
+    Pushya: "பூசம்",
+    Ashlesha: "ஆயில்யம்",
+    Magha: "மகம்",
+    "Purva Phalguni": "பூரம்",
+    "Uttara Phalguni": "உத்திரம்",
+    Hasta: "ஹஸ்தம்",
+    Chitra: "சித்திரை",
+    Swati: "சுவாதி",
+    Vishakha: "விசாகம்",
+    Anuradha: "அனுஷம்",
+    Jyeshtha: "கேட்டை",
+    Mula: "மூலம்",
+    "Purva Ashadha": "பூராடம்",
+    "Uttara Ashadha": "உத்திராடம்",
+    Shravana: "திருவோணம்",
+    Dhanishta: "அவிட்டம்",
+    Shatabhisha: "சதயம்",
+    "Purva Bhadrapada": "பூரட்டாதி",
+    "Uttara Bhadrapada": "உத்திரட்டாதி",
+    Revati: "ரேவதி",
   };
 
   // Convert English nakshatra names to Tamil
   const convertChandrashtamaToTamil = (englishNames) => {
-    if (!englishNames) return 'N/A';
+    if (!englishNames) return "N/A";
 
     if (Array.isArray(englishNames)) {
-      return englishNames.map(name => nakshatraEnglishToTamil[name] || name).join(', ');
+      return englishNames
+        .map((name) => nakshatraEnglishToTamil[name] || name)
+        .join(", ");
     }
 
-    if (typeof englishNames === 'string') {
+    if (typeof englishNames === "string") {
       return nakshatraEnglishToTamil[englishNames] || englishNames;
     }
 
-    return 'N/A';
+    return "N/A";
   };
 
   return (
     <div className="container">
       <Head>
         <title>TamilJyotish Daily Panchangam</title>
-        <meta name="description" content="Daily panchangam information for auspicious timing" />
+        <meta
+          name="description"
+          content="Daily panchangam information for auspicious timing"
+        />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <header className="header">
-        <h1>✨ TamilJyotish Daily Panchangam ✨</h1>
+        <h1>✨ விஸ்வாவசு தமிழ் பஞ்சாங்கம் 2025-2026 ✨</h1>
 
         <div className="date-selector">
           <input
@@ -197,6 +278,31 @@ export default function Home() {
             onChange={handleDateChange}
           />
         </div>
+
+        {/* Add the Read Aloud button */}
+        <button
+          onClick={speakContent}
+          style={{
+            margin: "10px auto",
+            display: "block",
+            padding: "8px 15px",
+            backgroundColor: "#4f46e5",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+          }}
+          disabled={loading || !panchangamData}
+        >
+          <span role="img" aria-hidden="true">
+            🔊
+          </span>{" "}
+          தமிழில் வாசிக்க (Read in Tamil)
+        </button>
       </header>
 
       <main>
@@ -210,11 +316,18 @@ export default function Home() {
             <div className="basic-info">
               <div className="info-item">
                 <span className="label">📅 Date: </span>
-                {new Date(panchangamData.date).toLocaleDateString([], {day: 'numeric', month: 'long', year: 'numeric'})}
+                {new Date(panchangamData.date).toLocaleDateString([], {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
               </div>
               <div className="info-item">
                 <span className="label">📆 Day: </span>
-                {panchangamData.vaara || new Date(panchangamData.date).toLocaleDateString([], {weekday: 'long'})}
+                {panchangamData.vaara ||
+                  new Date(panchangamData.date).toLocaleDateString([], {
+                    weekday: "long",
+                  })}
               </div>
             </div>
 
@@ -224,11 +337,11 @@ export default function Home() {
             <div className="info-section">
               <div className="info-item">
                 <span className="label">🌟 Main Nakshatra: </span>
-                {panchangamData.main_nakshatra || 'N/A'}
+                {panchangamData.main_nakshatra || "N/A"}
               </div>
               <div className="info-item">
                 <span className="label">🔮 Nakshatra Yogam: </span>
-                {panchangamData.nakshatra_yogam || 'N/A'}
+                {panchangamData.nakshatra_yogam || "N/A"}
               </div>
             </div>
 
@@ -236,15 +349,21 @@ export default function Home() {
             <div className="info-section">
               <div className="info-item">
                 <span className="label">🌗 Tithi: </span>
-                {(panchangamData.tithi && getFirstItem(panchangamData.tithi)?.name) || 'N/A'}
+                {(panchangamData.tithi &&
+                  getFirstItem(panchangamData.tithi)?.name) ||
+                  "N/A"}
               </div>
               <div className="info-item">
                 <span className="label">✨ Yogam: </span>
-                {(panchangamData.yoga && getFirstItem(panchangamData.yoga)?.name) || 'N/A'}
+                {(panchangamData.yoga &&
+                  getFirstItem(panchangamData.yoga)?.name) ||
+                  "N/A"}
               </div>
               <div className="info-item">
                 <span className="label">🌓 Karanam: </span>
-                {(panchangamData.karana && getFirstItem(panchangamData.karana)?.name) || 'N/A'}
+                {(panchangamData.karana &&
+                  getFirstItem(panchangamData.karana)?.name) ||
+                  "N/A"}
               </div>
             </div>
 
@@ -275,19 +394,19 @@ export default function Home() {
             <div className="info-section">
               <div className="info-item">
                 <span className="label">⚠️ Rahu Kalam: </span>
-                {panchangamData.rahu_kalam || 'N/A'}
+                {panchangamData.rahu_kalam || "N/A"}
               </div>
               <div className="info-item">
                 <span className="label">⏱️ Yamagandam: </span>
-                {panchangamData.yamagandam || 'N/A'}
+                {panchangamData.yamagandam || "N/A"}
               </div>
               <div className="info-item">
                 <span className="label">⏳ Kuligai: </span>
-                {panchangamData.kuligai || 'N/A'}
+                {panchangamData.kuligai || "N/A"}
               </div>
               <div className="info-item">
                 <span className="label">✅ Abhijit Muhurta: </span>
-                {panchangamData.abhijit_muhurta || 'N/A'}
+                {panchangamData.abhijit_muhurta || "N/A"}
               </div>
             </div>
 
@@ -303,13 +422,17 @@ export default function Home() {
               {panchangamData.chandrashtama_for && (
                 <div className="info-item">
                   <span className="label">🔄 Chandrashtama for: </span>
-                  {convertChandrashtamaToTamil(panchangamData.chandrashtama_for)}
+                  {convertChandrashtamaToTamil(
+                    panchangamData.chandrashtama_for,
+                  )}
                 </div>
               )}
 
               <div className="info-item cosmic-score">
                 <span className="label">🌿 Cosmic Score: </span>
-                {panchangamData.cosmic_score ? `${panchangamData.cosmic_score}/10` : 'N/A'}
+                {panchangamData.cosmic_score
+                  ? `${panchangamData.cosmic_score}/10`
+                  : "N/A"}
               </div>
             </div>
           </div>
@@ -326,7 +449,13 @@ export default function Home() {
           max-width: 600px;
           margin: 0 auto;
           padding: 20px;
-          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-family:
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            sans-serif;
           background-color: #f5f5f5;
           color: #333;
           line-height: 1.5;
@@ -360,7 +489,7 @@ export default function Home() {
         .panel {
           background: white;
           border-radius: 10px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
           padding: 20px;
         }
 
