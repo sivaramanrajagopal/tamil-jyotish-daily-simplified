@@ -7,17 +7,20 @@ export default function Home() {
   const [panchangamData, setPanchangamData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Preload voices on iOS
+  useEffect(() => {
+    const dummy = new SpeechSynthesisUtterance("");
+    window.speechSynthesis.speak(dummy);
+    window.speechSynthesis.cancel();
+  }, []);
+
   useEffect(() => {
     fetchPanchangamData(selectedDate);
   }, [selectedDate]);
 
   const fetchPanchangamData = async (date) => {
     setLoading(true);
-
-    // Format date for API
     const formattedDate = date.toISOString().split("T")[0];
-
-    // Fetch from Supabase
     const { data, error } = await supabase
       .from("daily_panchangam")
       .select("*")
@@ -37,7 +40,6 @@ export default function Home() {
       return;
     }
 
-    // Get nakshatra yogam
     const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
     try {
       const { data: yogamData, error: yogamError } = await supabase.rpc(
@@ -53,7 +55,7 @@ export default function Home() {
       setPanchangamData({ ...data, nakshatra_yogam: yogamData });
     } catch (e) {
       console.error("Error fetching nakshatra yogam:", e);
-      setPanchangamData(data); // Set without yogam data
+      setPanchangamData(data);
     }
 
     setLoading(false);
@@ -64,22 +66,16 @@ export default function Home() {
     setSelectedDate(newDate);
   };
 
-  const formatDate = (date) => {
-    return date.toISOString().split("T")[0];
-  };
+  const formatDate = (date) => date.toISOString().split("T")[0];
 
-  // Format time function
   const formatTime = (timeStr) => {
     if (!timeStr) return "N/A";
-
     const date = new Date(timeStr);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Get special day name
   const getSpecialDay = (data) => {
     if (!data) return "Normal Day";
-
     if (data.is_pournami) return "பௌர்ணமி (Full Moon Day)";
     if (data.is_amavasai) return "அமாவாசை (New Moon Day)";
     if (data.is_ekadashi) return "ஏகாதசி (Ekadashi)";
@@ -91,32 +87,24 @@ export default function Home() {
     return "Normal Day";
   };
 
-  // Modified text-to-speech function optimized for mobile
   const speakContent = () => {
-    // Check if speech synthesis is available
     if (typeof window === "undefined" || !window.speechSynthesis) {
       alert("Text-to-speech is not supported in your browser");
       return;
     }
-
     if (!panchangamData) return;
 
-    // Stop any ongoing speech
     window.speechSynthesis.cancel();
-
-    // Mobile detection
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    // Break text into smaller chunks for mobile
     const createTextChunks = () => {
-      // Format date in Tamil style
       const today = new Date(panchangamData.date);
       const day = today.getDate();
       const month = today.getMonth() + 1;
       const year = today.getFullYear();
       const formattedDate = `${day} ${month} ${year}`;
 
-      // Create array of text segments
       return [
         `இன்றைய பஞ்சாங்கம் ${formattedDate}.`,
         `கிழமை: ${panchangamData.vaara}.`,
@@ -130,100 +118,74 @@ export default function Home() {
       ];
     };
 
-    // Get available voices and speak first chunk
     const speakInSequence = () => {
       const chunks = createTextChunks();
       const voices = window.speechSynthesis.getVoices();
-
-      // Debug available voices
       console.log(
         "Available voices:",
         voices.map((v) => `${v.name} (${v.lang})`),
       );
 
-      // Find the best Tamil voice
       let tamilVoice = voices.find(
-        (voice) =>
-          voice.lang === "ta-IN" ||
-          voice.lang === "ta_IN" ||
-          voice.lang.startsWith("ta"),
+        (v) =>
+          (v.lang === "ta-IN" || v.lang.startsWith("ta")) &&
+          v.name.toLowerCase().includes("female"),
       );
 
-      // Fallback to any Indian voice if no Tamil voice
       if (!tamilVoice) {
         tamilVoice = voices.find(
-          (voice) => voice.lang === "hi-IN" || voice.lang.includes("IN"),
+          (v) =>
+            (v.lang === "hi-IN" || v.lang.startsWith("en")) &&
+            v.name.toLowerCase().includes("female"),
         );
+      }
+
+      if (!tamilVoice) {
+        console.warn("Tamil voice not available. Using default voice.");
       }
 
       console.log("Selected voice:", tamilVoice ? tamilVoice.name : "Default");
 
-      // Function to speak each chunk
       let chunkIndex = 0;
-
       const speakNextChunk = () => {
         if (chunkIndex < chunks.length) {
           const utterance = new SpeechSynthesisUtterance(chunks[chunkIndex]);
-          utterance.lang = "ta-IN";
-          utterance.rate = isMobile ? 0.7 : 0.8; // Slower on mobile
+          utterance.lang = tamilVoice?.lang || "ta-IN";
+          utterance.rate = isMobile ? 0.7 : 0.8;
 
           if (tamilVoice) {
             utterance.voice = tamilVoice;
+            utterance.voiceURI = tamilVoice.voiceURI;
           }
 
-          // Listen for end of speech
           utterance.onend = () => {
             chunkIndex++;
-            setTimeout(speakNextChunk, 300); // Add pause between chunks
+            setTimeout(speakNextChunk, 300);
           };
 
-          // Handle errors
           utterance.onerror = (e) => {
             console.error("Speech error:", e);
             chunkIndex++;
             setTimeout(speakNextChunk, 300);
           };
 
-          // Speak the chunk
           window.speechSynthesis.speak(utterance);
         }
       };
 
-      // Start speaking
       speakNextChunk();
     };
 
-    // Mobile browsers need a workaround for voice loading
-    if (isMobile) {
-      // Check specifically for Android
-      const isAndroid = /Android/i.test(navigator.userAgent);
-
-      if (isAndroid) {
-        // Android-specific optimizations
-        setTimeout(speakInSequence, 100); // Faster startup on Android
-        return;
-      }
-
-      // iOS workaround to get voices
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-      window.speechSynthesis.cancel();
-
-      // Short timeout to ensure voices are loaded
-      setTimeout(speakInSequence, 250);
+    if (isiOS) {
+      setTimeout(speakInSequence, 300);
     } else {
-      // Desktop handling
       speakInSequence();
     }
   };
 
-  // Properly parse JSONB fields
   const parseJsonField = (field) => {
     if (!field) return null;
-
-    // If it's already an array or object, return it
     if (typeof field === "object") return field;
-
-    // If it's a string, try to parse it
     if (typeof field === "string") {
       try {
         return JSON.parse(field);
@@ -232,35 +194,21 @@ export default function Home() {
         return null;
       }
     }
-
     return null;
   };
 
-  // Get the first item from a JSONB array field
   const getFirstItem = (field) => {
     const parsed = parseJsonField(field);
-
     if (!parsed) return null;
-
-    // If it's an array
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed[0];
-    }
-
-    // If it's an object that might represent an array
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
     if (typeof parsed === "object" && parsed !== null) {
-      // Try to find the first item (could be at index 0 or with key "0")
       if (parsed[0]) return parsed[0];
-
-      // Otherwise take the first key's value
       const firstKey = Object.keys(parsed)[0];
       if (firstKey) return parsed[firstKey];
     }
-
     return null;
   };
 
-  // Map for English to Tamil nakshatra names
   const nakshatraEnglishToTamil = {
     Ashwini: "அசுவினி",
     Bharani: "பரணி",
