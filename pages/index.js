@@ -91,7 +91,7 @@ export default function Home() {
     return "Normal Day";
   };
 
-  // Modified text-to-speech function with Tamil labels
+  // Modified text-to-speech function optimized for mobile
   const speakContent = () => {
     // Check if speech synthesis is available
     if (typeof window === "undefined" || !window.speechSynthesis) {
@@ -104,64 +104,115 @@ export default function Home() {
     // Stop any ongoing speech
     window.speechSynthesis.cancel();
 
-    // Format date in Tamil style
-    const today = new Date(panchangamData.date);
-    const day = today.getDate();
-    const month = today.getMonth() + 1;
-    const year = today.getFullYear();
-    const formattedDate = `${day} ${month} ${year}`;
+    // Mobile detection
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    // Create the text to speak with Tamil labels
-    let textToSpeak = `
-      இன்றைய பஞ்சாங்கம் ${formattedDate}.
-      கிழமை: ${panchangamData.vaara}.
-      நட்சத்திரம்: ${panchangamData.main_nakshatra || ""}.
-      நட்சத்திர யோகம்: ${panchangamData.nakshatra_yogam || ""}.
-      திதி: ${(panchangamData.tithi && getFirstItem(panchangamData.tithi)?.name) || ""}.
-      ராகு காலம்: ${panchangamData.rahu_kalam || ""}.
-      எமகண்டம்: ${panchangamData.yamagandam || ""}.
-      குளிகை: ${panchangamData.kuligai || ""}.
-      சந்திராஷ்டமம்: ${convertChandrashtamaToTamil(panchangamData.chandrashtama_for) || ""}.
-      விசேஷ நாள்: ${getSpecialDay(panchangamData)}.
-    `;
+    // Break text into smaller chunks for mobile
+    const createTextChunks = () => {
+      // Format date in Tamil style
+      const today = new Date(panchangamData.date);
+      const day = today.getDate();
+      const month = today.getMonth() + 1;
+      const year = today.getFullYear();
+      const formattedDate = `${day} ${month} ${year}`;
 
-    // Create speech utterance with Tamil language
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utterance.lang = "ta-IN"; // Set Tamil language
-    utterance.rate = 0.8; // Slower rate for better pronunciation
+      // Create array of text segments
+      return [
+        `இன்றைய பஞ்சாங்கம் ${formattedDate}.`,
+        `கிழமை: ${panchangamData.vaara}.`,
+        `நட்சத்திரம்: ${panchangamData.main_nakshatra || ""}.`,
+        `நட்சத்திர யோகம்: ${panchangamData.nakshatra_yogam || ""}.`,
+        `திதி: ${(panchangamData.tithi && getFirstItem(panchangamData.tithi)?.name) || ""}.`,
+        `ராகு காலம்: ${panchangamData.rahu_kalam || ""}.`,
+        `எமகண்டம்: ${panchangamData.yamagandam || ""}.`,
+        `சந்திராஷ்டமம்: ${convertChandrashtamaToTamil(panchangamData.chandrashtama_for) || ""}.`,
+        `விசேஷ நாள்: ${getSpecialDay(panchangamData)}.`,
+      ];
+    };
 
-    // Try to find a Tamil voice
-    try {
-      // Wait a moment to make sure voices are loaded
-      setTimeout(() => {
-        const voices = window.speechSynthesis.getVoices();
-        console.log(
-          "Available voices:",
-          voices.map((v) => `${v.name} (${v.lang})`),
+    // Get available voices and speak first chunk
+    const speakInSequence = () => {
+      const chunks = createTextChunks();
+      const voices = window.speechSynthesis.getVoices();
+
+      // Debug available voices
+      console.log(
+        "Available voices:",
+        voices.map((v) => `${v.name} (${v.lang})`),
+      );
+
+      // Find the best Tamil voice
+      let tamilVoice = voices.find(
+        (voice) =>
+          voice.lang === "ta-IN" ||
+          voice.lang === "ta_IN" ||
+          voice.lang.startsWith("ta"),
+      );
+
+      // Fallback to any Indian voice if no Tamil voice
+      if (!tamilVoice) {
+        tamilVoice = voices.find(
+          (voice) => voice.lang === "hi-IN" || voice.lang.includes("IN"),
         );
+      }
 
-        // Look for Tamil voice
-        const tamilVoice = voices.find(
-          (voice) =>
-            voice.lang.includes("ta") ||
-            voice.name.includes("Tamil") ||
-            voice.name.includes("ta-IN"),
-        );
+      console.log("Selected voice:", tamilVoice ? tamilVoice.name : "Default");
 
-        if (tamilVoice) {
-          console.log("Using Tamil voice:", tamilVoice.name);
-          utterance.voice = tamilVoice;
-        } else {
-          console.log("No Tamil voice found, using default voice");
+      // Function to speak each chunk
+      let chunkIndex = 0;
+
+      const speakNextChunk = () => {
+        if (chunkIndex < chunks.length) {
+          const utterance = new SpeechSynthesisUtterance(chunks[chunkIndex]);
+          utterance.lang = "ta-IN";
+          utterance.rate = isMobile ? 0.7 : 0.8; // Slower on mobile
+
+          if (tamilVoice) {
+            utterance.voice = tamilVoice;
+          }
+
+          // Listen for end of speech
+          utterance.onend = () => {
+            chunkIndex++;
+            setTimeout(speakNextChunk, 300); // Add pause between chunks
+          };
+
+          // Handle errors
+          utterance.onerror = (e) => {
+            console.error("Speech error:", e);
+            chunkIndex++;
+            setTimeout(speakNextChunk, 300);
+          };
+
+          // Speak the chunk
+          window.speechSynthesis.speak(utterance);
         }
+      };
 
-        // Start speaking
-        window.speechSynthesis.speak(utterance);
-      }, 100);
-    } catch (e) {
-      console.error("Error setting voice:", e);
-      // Fallback if there's an error
-      window.speechSynthesis.speak(utterance);
+      // Start speaking
+      speakNextChunk();
+    };
+
+    // Mobile browsers need a workaround for voice loading
+    if (isMobile) {
+      // Check specifically for Android
+      const isAndroid = /Android/i.test(navigator.userAgent);
+
+      if (isAndroid) {
+        // Android-specific optimizations
+        setTimeout(speakInSequence, 100); // Faster startup on Android
+        return;
+      }
+
+      // iOS workaround to get voices
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+      window.speechSynthesis.cancel();
+
+      // Short timeout to ensure voices are loaded
+      setTimeout(speakInSequence, 250);
+    } else {
+      // Desktop handling
+      speakInSequence();
     }
   };
 
@@ -269,7 +320,7 @@ export default function Home() {
       </Head>
 
       <header className="header">
-        <h1>✨ விஸ்வாவசு தமிழ் பஞ்சாங்கம் 2025-2026 ✨</h1>
+        <h1>✨ விஸ்வாவசு தமிழ் பஞ்சாங்கம் ✨</h1>
 
         <div className="date-selector">
           <input
