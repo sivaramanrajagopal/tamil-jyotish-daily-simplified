@@ -354,7 +354,7 @@ export default function Home() {
       // Add RS Nakshatra warning if applicable
       if (rsNakshatraInfo) {
         chunks.push(
-          `கவனம்! இன்று ${rsNakshatraInfo.nakshatra_name_tamil || rsNakshatraInfo.nakshatra_name} ராக்ஷஸ நட்சத்திரம்.`,
+          `கவனம்! இன்று ${rsNakshatraInfo.nakshatra_name_tamil || rsNakshatraInfo.nakshatra_name} தீதுரு நட்சத்திரம்.`,
           `இந்த நட்சத்திரத்தில் மருத்துவ சிகிச்சை, பயணம், மற்றும் பண பரிவர்த்தனை தவிர்க்க வேண்டும்.`,
         );
       }
@@ -526,7 +526,7 @@ export default function Home() {
               <span role="img" aria-label="Warning" className="warning-icon">
                 ⚠️
               </span>
-              <h3>ராக்ஷஸ நட்சத்திர எச்சரிக்கை</h3>
+              <h3>தீதுரு நட்சத்திர எச்சரிக்கை</h3>
             </div>
             <p>
               இன்று{" "}
@@ -534,7 +534,7 @@ export default function Home() {
                 {rsNakshatraInfo.nakshatra_name_tamil ||
                   rsNakshatraInfo.nakshatra_name}
               </strong>{" "}
-              நட்சத்திரம் ராக்ஷஸ நட்சத்திரமாக கருதப்படுகிறது.
+              நட்சத்திரம் தீதுரு நட்சத்திரமாக கருதப்படுகிறது.
             </p>
             <div className="warning-items">
               {rsNakshatraInfo.avoid_medical && (
