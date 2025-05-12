@@ -1,3 +1,4 @@
+// pages/index.js
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { supabase } from "../lib/supabaseClient";
@@ -6,6 +7,7 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [panchangamData, setPanchangamData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [rsNakshatraInfo, setRsNakshatraInfo] = useState(null);
 
   // Preload voices on iOS
   useEffect(() => {
@@ -17,6 +19,103 @@ export default function Home() {
   useEffect(() => {
     fetchPanchangamData(selectedDate);
   }, [selectedDate]);
+
+  // Complete mapping of English to Tamil nakshatra names, including alternatives
+  const nakshatraEnglishToTamil = {
+    Ashwini: "அசுவினி",
+    Bharani: "பரணி",
+    Krittika: "கார்த்திகை",
+    Rohini: "ரோகிணி",
+    Mrigasira: "மிருகசீரிஷம்",
+    Ardra: "திருவாதிரை",
+    Punarvasu: "புனர்பூசம்",
+    Pushya: "பூசம்",
+    Ashlesha: "ஆயில்யம்",
+    Magha: "மகம்",
+    "Purva Phalguni": "பூரம்",
+    "Uttara Phalguni": "உத்திரம்",
+    Hasta: "ஹஸ்தம்",
+    Chitra: "சித்திரை",
+    Swati: "சுவாதி",
+    Swathi: "ஸ்வாதி", // Added specific mapping for Swathi with alternative spelling
+    Vishakha: "விசாகம்",
+    Anuradha: "அனுஷம்",
+    Jyeshtha: "கேட்டை",
+    Mula: "மூலம்",
+    "Purva Ashadha": "பூராடம்",
+    "Uttara Ashadha": "உத்திராடம்",
+    Shravana: "திருவோணம்",
+    Dhanishta: "அவிட்டம்",
+    Shatabhisha: "சதயம்",
+    "Purva Bhadrapada": "பூரட்டாதி",
+    "Uttara Bhadrapada": "உத்திரட்டாதி",
+    Revati: "ரேவதி",
+  };
+
+  // Reverse mapping for Tamil to English (helpful for detection)
+  const nakshatraTamilToEnglish = {};
+  Object.entries(nakshatraEnglishToTamil).forEach(([english, tamil]) => {
+    nakshatraTamilToEnglish[tamil] = english;
+  });
+
+  // Alternative spellings for each nakshatra
+  const nakshatraAlternatives = {
+    // Primary Tamil : [Alternative spellings]
+    அசுவினி: ["அஸ்வினி", "அச்வினி"],
+    பரணி: ["பரநி"],
+    கார்த்திகை: ["கிருத்திகை", "கிருத்திகா", "கார்திகை"],
+    திருவாதிரை: ["திருவாதிரா", "ஆர்திரா", "ஆர்த்ரா"],
+    ஆயில்யம்: ["ஆஷ்லேஷா", "ஆஸ்லேஷா", "அஸ்லேசா"],
+    ஹஸ்தம்: ["அஸ்தம்", "ஹஸ்த"],
+    சித்திரை: ["சித்ரா", "சித்ர"],
+    சுவாதி: ["ஸ்வாதி", "ஸ்வாதீ"],
+    ஸ்வாதி: ["சுவாதி", "ஸ்வாதீ", "Swati", "Swathi"], // Added key for the alternative
+    விசாகம்: ["விசாக", "விசாகா", "விஷாகம்"],
+    கேட்டை: ["ஜ்யேஷ்டா", "ஜேஷ்டா", "ஜ்யேஷ்ட"],
+    பூராடம்: ["பூர்வாஷாடா", "பூர்வாஷாட", "பூர்வ அஷாடா"],
+    உத்திராடம்: ["உத்தராஷாடா", "உத்தராஷாட", "உத்தர அஷாடா"],
+    பூரட்டாதி: ["பூர்வ பத்ரபதா", "பூர்வா பாத்ரபதா"],
+    உத்திரட்டாதி: ["உத்தர பத்ரபதா", "உத்தரா பாத்ரபதா"],
+  };
+
+  // Mapping for RS Nakshatra group - the 12 nakshatras that should show warnings
+  const rsNakshatraGroup = [
+    "Bharani",
+    "Krittika",
+    "Ardra",
+    "Ashlesha",
+    "Magha",
+    "Purva Phalguni",
+    "Chitra",
+    "Swati",
+    "Swathi",
+    "Vishakha",
+    "Jyeshtha",
+    "Purva Ashadha",
+    "Purva Bhadrapada",
+  ];
+
+  // Tamil names for RS Nakshatras
+  const rsNakshatraTamilNames = [
+    "பரணி",
+    "கார்த்திகை",
+    "திருவாதிரை",
+    "ஆயில்யம்",
+    "மகம்",
+    "பூரம்",
+    "சித்திரை",
+    "சுவாதி",
+    "ஸ்வாதி",
+    "விசாகம்",
+    "கேட்டை",
+    "பூராடம்",
+    "பூரட்டாதி",
+  ];
+
+  // All alternative spellings for RS Nakshatras, flattened into one array
+  const rsNakshatraAlternatives = rsNakshatraTamilNames
+    .map((name) => nakshatraAlternatives[name] || [])
+    .flat();
 
   const fetchPanchangamData = async (date) => {
     setLoading(true);
@@ -52,7 +151,112 @@ export default function Home() {
 
       if (yogamError) throw yogamError;
 
-      setPanchangamData({ ...data, nakshatra_yogam: yogamData });
+      // Extract nakshatra names from the data
+      const mainNakshatra = data.main_nakshatra;
+
+      // Check if the nakshatra is in Tamil or English
+      const isTamilNakshatra = /[\u0B80-\u0BFF]/.test(mainNakshatra);
+
+      // Get appropriate name equivalents
+      let englishNakshatraName = "";
+      let tamilNakshatraName = "";
+
+      if (isTamilNakshatra) {
+        // It's in Tamil
+        tamilNakshatraName = mainNakshatra;
+        englishNakshatraName = nakshatraTamilToEnglish[mainNakshatra] || "";
+      } else {
+        // It's in English
+        englishNakshatraName = mainNakshatra;
+        tamilNakshatraName = nakshatraEnglishToTamil[mainNakshatra] || "";
+      }
+
+      // Debug log
+      console.log("Current nakshatra:", mainNakshatra);
+      console.log("Is Tamil:", isTamilNakshatra);
+      console.log("English equivalent:", englishNakshatraName);
+      console.log("Tamil equivalent:", tamilNakshatraName);
+
+      // Determine if this is an RS Nakshatra
+      let isRSNakshatra = false;
+
+      // Check all possible ways
+      if (
+        // 1. Check against English list
+        rsNakshatraGroup.includes(englishNakshatraName) ||
+        rsNakshatraGroup.includes(mainNakshatra) ||
+        // 2. Check against Tamil list
+        rsNakshatraTamilNames.includes(tamilNakshatraName) ||
+        rsNakshatraTamilNames.includes(mainNakshatra) ||
+        // 3. Special case for Swati/Swathi
+        mainNakshatra === "Swati" ||
+        mainNakshatra === "Swathi" ||
+        mainNakshatra === "ஸ்வாதி" ||
+        mainNakshatra === "சுவாதி" ||
+        // 4. Check against alternative spellings
+        rsNakshatraAlternatives.includes(mainNakshatra)
+      ) {
+        isRSNakshatra = true;
+      }
+
+      // Set RS Nakshatra info if found
+      if (isRSNakshatra) {
+        setRsNakshatraInfo({
+          is_rs_nakshatra: true,
+          avoid_medical: true,
+          avoid_travel: true,
+          avoid_financial: true,
+          rs_nakshatra_short_desc:
+            "தவிர்க்க வேண்டியவை: மருத்துவ சிகிச்சை, பயணம், நிதி பரிவர்த்தனைகள்",
+          nakshatra_name: mainNakshatra,
+          nakshatra_name_tamil: isTamilNakshatra
+            ? mainNakshatra
+            : tamilNakshatraName,
+        });
+        console.log("RS Nakshatra detected!");
+      } else {
+        setRsNakshatraInfo(null);
+        console.log("Not an RS Nakshatra");
+      }
+
+      // Check moon phase from tithi
+      let moonPhase = {
+        is_valar_pirai: false,
+        is_thei_pirai: false,
+      };
+
+      // Parse tithi data to determine moon phase
+      if (data.tithi) {
+        let tithiData;
+        if (typeof data.tithi === "string") {
+          try {
+            tithiData = JSON.parse(data.tithi);
+          } catch (e) {
+            console.error("Error parsing tithi JSON:", e);
+          }
+        } else {
+          tithiData = data.tithi;
+        }
+
+        if (Array.isArray(tithiData)) {
+          // Check for Shukla Paksha (growing moon)
+          moonPhase.is_valar_pirai = tithiData.some(
+            (t) => t.paksha === "சுக்ல பக்ஷ",
+          );
+
+          // Check for Krishna Paksha (waning moon)
+          moonPhase.is_thei_pirai = tithiData.some(
+            (t) => t.paksha === "கிருஷ்ண பக்ஷ",
+          );
+        }
+      }
+
+      setPanchangamData({
+        ...data,
+        nakshatra_yogam: yogamData,
+        is_valar_pirai: moonPhase.is_valar_pirai,
+        is_thei_pirai: moonPhase.is_thei_pirai,
+      });
     } catch (e) {
       console.error("Error fetching nakshatra yogam:", e);
       setPanchangamData(data);
@@ -87,6 +291,26 @@ export default function Home() {
     return "Normal Day";
   };
 
+  // Component for moon phase indicator
+  const MoonPhaseIndicator = ({ isValarPirai, isTheiPirai }) => {
+    if (isValarPirai) {
+      return (
+        <span className="moon-phase valar-pirai">
+          <span className="moon-arrow">⬆</span>
+          <span className="moon-text">வளர்பிறை</span>
+        </span>
+      );
+    } else if (isTheiPirai) {
+      return (
+        <span className="moon-phase thei-pirai">
+          <span className="moon-arrow">⬇</span>
+          <span className="moon-text">தேய்பிறை</span>
+        </span>
+      );
+    }
+    return null;
+  };
+
   const speakContent = () => {
     if (typeof window === "undefined" || !window.speechSynthesis) {
       alert("Text-to-speech is not supported in your browser");
@@ -105,17 +329,37 @@ export default function Home() {
       const year = today.getFullYear();
       const formattedDate = `${day} ${month} ${year}`;
 
-      return [
+      const chunks = [
         `இன்றைய பஞ்சாங்கம் ${formattedDate}.`,
         `கிழமை: ${panchangamData.vaara}.`,
         `நட்சத்திரம்: ${panchangamData.main_nakshatra || ""}.`,
         `நட்சத்திர யோகம்: ${panchangamData.nakshatra_yogam || ""}.`,
         `திதி: ${(panchangamData.tithi && getFirstItem(panchangamData.tithi)?.name) || ""}.`,
+      ];
+
+      // Add moon phase info to speech
+      if (panchangamData.is_valar_pirai) {
+        chunks.push(`சந்திரன் நிலை: வளர்பிறை.`);
+      } else if (panchangamData.is_thei_pirai) {
+        chunks.push(`சந்திரன் நிலை: தேய்பிறை.`);
+      }
+
+      chunks.push(
         `ராகு காலம்: ${panchangamData.rahu_kalam || ""}.`,
         `எமகண்டம்: ${panchangamData.yamagandam || ""}.`,
         `சந்திராஷ்டமம்: ${convertChandrashtamaToTamil(panchangamData.chandrashtama_for) || ""}.`,
         `விசேஷ நாள்: ${getSpecialDay(panchangamData)}.`,
-      ];
+      );
+
+      // Add RS Nakshatra warning if applicable
+      if (rsNakshatraInfo) {
+        chunks.push(
+          `கவனம்! இன்று ${rsNakshatraInfo.nakshatra_name_tamil || rsNakshatraInfo.nakshatra_name} ராக்ஷஸ நட்சத்திரம்.`,
+          `இந்த நட்சத்திரத்தில் மருத்துவ சிகிச்சை, பயணம், மற்றும் பண பரிவர்த்தனை தவிர்க்க வேண்டும்.`,
+        );
+      }
+
+      return chunks;
     };
 
     const speakInSequence = () => {
@@ -209,36 +453,6 @@ export default function Home() {
     return null;
   };
 
-  const nakshatraEnglishToTamil = {
-    Ashwini: "அசுவினி",
-    Bharani: "பரணி",
-    Krittika: "கார்த்திகை",
-    Rohini: "ரோகிணி",
-    Mrigasira: "மிருகசீரிஷம்",
-    Ardra: "திருவாதிரை",
-    Punarvasu: "புனர்பூசம்",
-    Pushya: "பூசம்",
-    Ashlesha: "ஆயில்யம்",
-    Magha: "மகம்",
-    "Purva Phalguni": "பூரம்",
-    "Uttara Phalguni": "உத்திரம்",
-    Hasta: "ஹஸ்தம்",
-    Chitra: "சித்திரை",
-    Swati: "சுவாதி",
-    Vishakha: "விசாகம்",
-    Anuradha: "அனுஷம்",
-    Jyeshtha: "கேட்டை",
-    Mula: "மூலம்",
-    "Purva Ashadha": "பூராடம்",
-    "Uttara Ashadha": "உத்திராடம்",
-    Shravana: "திருவோணம்",
-    Dhanishta: "அவிட்டம்",
-    Shatabhisha: "சதயம்",
-    "Purva Bhadrapada": "பூரட்டாதி",
-    "Uttara Bhadrapada": "உத்திரட்டாதி",
-    Revati: "ரேவதி",
-  };
-
   // Convert English nakshatra names to Tamil
   const convertChandrashtamaToTamil = (englishNames) => {
     if (!englishNames) return "N/A";
@@ -305,6 +519,60 @@ export default function Home() {
       </header>
 
       <main>
+        {/* RS Nakshatra Warning Section */}
+        {rsNakshatraInfo && (
+          <div className="rs-nakshatra-warning">
+            <div className="warning-header">
+              <span role="img" aria-label="Warning" className="warning-icon">
+                ⚠️
+              </span>
+              <h3>ராக்ஷஸ நட்சத்திர எச்சரிக்கை</h3>
+            </div>
+            <p>
+              இன்று{" "}
+              <strong>
+                {rsNakshatraInfo.nakshatra_name_tamil ||
+                  rsNakshatraInfo.nakshatra_name}
+              </strong>{" "}
+              நட்சத்திரம் ராக்ஷஸ நட்சத்திரமாக கருதப்படுகிறது.
+            </p>
+            <div className="warning-items">
+              {rsNakshatraInfo.avoid_medical && (
+                <div className="warning-item">
+                  <span role="img" aria-label="Medical">
+                    💊
+                  </span>
+                  <span>
+                    மருத்துவ சிகிச்சை அல்லது புதிய மருந்துகள் தொடங்குவதை
+                    தவிர்க்கவும்
+                  </span>
+                </div>
+              )}
+
+              {rsNakshatraInfo.avoid_travel && (
+                <div className="warning-item">
+                  <span role="img" aria-label="Travel">
+                    ✈️
+                  </span>
+                  <span>பயணம் மேற்கொள்வதை தவிர்க்கவும்</span>
+                </div>
+              )}
+
+              {rsNakshatraInfo.avoid_financial && (
+                <div className="warning-item">
+                  <span role="img" aria-label="Financial">
+                    💰
+                  </span>
+                  <span>
+                    கடன் வாங்குதல் அல்லது கொடுத்தல் போன்ற பண பரிவர்த்தனைகளை
+                    தவிர்க்கவும்
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="panel">Loading panchangam data...</div>
         ) : !panchangamData ? (
@@ -336,7 +604,11 @@ export default function Home() {
             <div className="info-section">
               <div className="info-item">
                 <span className="label">🌟 Main Nakshatra: </span>
-                {panchangamData.main_nakshatra || "N/A"}
+                <span>
+                  {panchangamData.main_nakshatra || "N/A"}
+                  {/* Add RS badge if applicable with space */}
+                  {rsNakshatraInfo && <span className="rs-badge">RS</span>}
+                </span>
               </div>
               <div className="info-item">
                 <span className="label">🔮 Nakshatra Yogam: </span>
@@ -348,9 +620,19 @@ export default function Home() {
             <div className="info-section">
               <div className="info-item">
                 <span className="label">🌗 Tithi: </span>
-                {(panchangamData.tithi &&
-                  getFirstItem(panchangamData.tithi)?.name) ||
-                  "N/A"}
+                <span>
+                  {(panchangamData.tithi &&
+                    getFirstItem(panchangamData.tithi)?.name) ||
+                    "N/A"}
+                  {/* Add moon phase indicator with proper spacing */}
+                  {(panchangamData.is_valar_pirai ||
+                    panchangamData.is_thei_pirai) && (
+                    <MoonPhaseIndicator
+                      isValarPirai={panchangamData.is_valar_pirai}
+                      isTheiPirai={panchangamData.is_thei_pirai}
+                    />
+                  )}
+                </span>
               </div>
               <div className="info-item">
                 <span className="label">✨ Yogam: </span>
@@ -516,6 +798,35 @@ export default function Home() {
           margin-bottom: 8px;
         }
 
+        .moon-phase {
+          display: inline-flex;
+          align-items: center;
+          margin-left: 8px;
+          font-size: 0.9rem;
+          padding: 2px 6px;
+          border-radius: 4px;
+          background-color: transparent;
+        }
+
+        .moon-arrow {
+          font-size: 14px;
+          font-weight: bold;
+          margin-right: 4px;
+        }
+
+        .valar-pirai .moon-arrow {
+          color: #22c55e; /* Explicit green color */
+        }
+
+        .thei-pirai .moon-arrow {
+          color: #ef4444; /* Explicit red color */
+        }
+
+        .moon-text {
+          font-size: 12px;
+          margin-left: 2px;
+        }
+
         .sun-moon-times {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -536,6 +847,66 @@ export default function Home() {
           margin-top: 30px;
           font-size: 14px;
           color: #666;
+        }
+
+        /* RS Nakshatra Warning Styles */
+        .rs-nakshatra-warning {
+          background-color: #ffebee;
+          border: 1px solid #e57373;
+          border-radius: 8px;
+          padding: 15px;
+          margin-bottom: 20px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .warning-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
+        .warning-icon {
+          font-size: 22px;
+          margin-right: 10px;
+        }
+
+        .warning-header h3 {
+          margin: 0;
+          color: #c62828;
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .warning-items {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 12px;
+          background-color: rgba(255, 255, 255, 0.5);
+          border-radius: 6px;
+          padding: 10px;
+        }
+
+        .warning-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .warning-item span:first-child {
+          font-size: 18px;
+        }
+
+        .rs-badge {
+          background-color: #d32f2f;
+          color: white;
+          font-size: 10px;
+          padding: 2px 6px;
+          border-radius: 10px;
+          margin-left: 8px;
+          display: inline-block;
+          vertical-align: middle;
+          font-weight: bold;
         }
 
         @media (max-width: 500px) {
