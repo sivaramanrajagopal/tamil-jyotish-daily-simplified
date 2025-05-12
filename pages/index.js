@@ -721,7 +721,7 @@ export default function Home() {
       </main>
 
       <footer className="footer">
-        <p>© {new Date().getFullYear()} TamilJyotish Daily</p>
+        <p> Creation {new Date().getFullYear()} Sivaraman Rajagopal</p>
       </footer>
 
       <style jsx>{`
