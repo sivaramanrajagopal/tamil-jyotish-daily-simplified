@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 
 export default function Status() {
   const [status, setStatus] = useState({});
@@ -116,7 +117,7 @@ export default function Status() {
       <div style={{ backgroundColor: '#f0f9ff', borderRadius: '8px', padding: '20px', marginBottom: '30px' }}>
         <h3 style={{ color: '#0369a1', marginBottom: '15px' }}>🎯 Quick Actions</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-          <a
+          <Link
             href="/"
             style={{
               padding: '12px',
@@ -129,8 +130,8 @@ export default function Status() {
             }}
           >
             🏠 Main App
-          </a>
-          <a
+          </Link>
+          <Link
             href="/calendar-test"
             style={{
               padding: '12px',
@@ -143,7 +144,7 @@ export default function Status() {
             }}
           >
             🧪 Test Page
-          </a>
+          </Link>
           <a
             href="/api/calendar/test-sample"
             target="_blank"

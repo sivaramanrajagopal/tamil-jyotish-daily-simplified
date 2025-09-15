@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 
 export default function Admin() {
@@ -252,7 +253,7 @@ export default function Admin() {
           >
             🔄 Refresh Data
           </button>
-          <a
+          <Link
             href="/status"
             style={{
               padding: '12px',
@@ -265,8 +266,8 @@ export default function Admin() {
             }}
           >
             📊 App Status
-          </a>
-          <a
+          </Link>
+          <Link
             href="/calendar-test"
             style={{
               padding: '12px',
@@ -279,7 +280,7 @@ export default function Admin() {
             }}
           >
             🧪 Test Calendar
-          </a>
+          </Link>
         </div>
       </div>
 

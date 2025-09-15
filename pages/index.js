@@ -19,7 +19,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchPanchangamData(selectedDate);
-  }, [selectedDate]);
+  }, [selectedDate, fetchPanchangamData]);
 
   // Complete mapping of English to Tamil nakshatra names, including alternatives
   const nakshatraEnglishToTamil = {
