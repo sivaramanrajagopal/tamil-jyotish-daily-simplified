@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { supabase } from "../lib/supabaseClient";
+import CalendarSync from "../components/CalendarSync";
 
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -270,12 +271,21 @@ export default function Home() {
     setSelectedDate(newDate);
   };
 
-  const formatDate = (date) => date.toISOString().split("T")[0];
+  const formatDateForInput = (date) => date.toISOString().split("T")[0];
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "N/A";
     const date = new Date(timeStr);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return date.toISOString().substring(11, 16); // HH:MM format
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = date.toLocaleDateString('en-US', { month: 'long' });
+    const day = date.getDate();
+    return `${day} ${month} ${year}`;
   };
 
   const getSpecialDay = (data) => {
@@ -484,13 +494,13 @@ export default function Home() {
       <header className="header">
         <h1>✨ விஸ்வாவசு தமிழ் பஞ்சாங்கம் ✨</h1>
 
-        <div className="date-selector">
-          <input
-            type="date"
-            value={formatDate(selectedDate)}
-            onChange={handleDateChange}
-          />
-        </div>
+            <div className="date-selector">
+              <input
+                type="date"
+                value={formatDateForInput(selectedDate)}
+                onChange={handleDateChange}
+              />
+            </div>
 
         {/* Add the Read Aloud button */}
         <button
@@ -516,6 +526,9 @@ export default function Home() {
           </span>{" "}
           தமிழில் வாசிக்க (Read in Tamil)
         </button>
+
+        {/* Calendar Sync Component */}
+        <CalendarSync />
       </header>
 
       <main>
@@ -583,18 +596,11 @@ export default function Home() {
             <div className="basic-info">
               <div className="info-item">
                 <span className="label">📅 Date: </span>
-                {new Date(panchangamData.date).toLocaleDateString([], {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {formatDate(panchangamData.date)}
               </div>
               <div className="info-item">
                 <span className="label">📆 Day: </span>
-                {panchangamData.vaara ||
-                  new Date(panchangamData.date).toLocaleDateString([], {
-                    weekday: "long",
-                  })}
+                {panchangamData.vaara || "Day"}
               </div>
             </div>
 
