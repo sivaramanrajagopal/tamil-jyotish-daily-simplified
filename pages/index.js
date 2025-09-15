@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import { supabase } from "../lib/supabaseClient";
+import { getRSNakshatraInfo } from "../lib/nakshatraUtils";
 
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [panchangamData, setPanchangamData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [rsNakshatraInfo, setRsNakshatraInfo] = useState(null);
 
   const fetchPanchangamData = useCallback(async (date) => {
     setLoading(true);
@@ -21,8 +23,21 @@ export default function Home() {
       if (error) {
         console.error("Error fetching panchangam:", error);
         setPanchangamData(null);
+        setRsNakshatraInfo(null);
       } else {
         setPanchangamData(data);
+        
+        // Check for RS Nakshatra
+        if (data && data.main_nakshatra) {
+          const rsInfo = getRSNakshatraInfo(data.main_nakshatra);
+          setRsNakshatraInfo(rsInfo);
+          
+          if (rsInfo) {
+            console.log("RS Nakshatra detected:", data.main_nakshatra);
+          }
+        } else {
+          setRsNakshatraInfo(null);
+        }
       }
     } catch (error) {
       console.error("Error:", error);
@@ -90,6 +105,60 @@ export default function Home() {
       </header>
 
         <main>
+          {/* RS Nakshatra Warning Section */}
+          {rsNakshatraInfo && (
+            <div className="rs-nakshatra-warning">
+              <div className="warning-header">
+                <span role="img" aria-label="Warning" className="warning-icon">
+                  ⚠️
+                </span>
+                <h3>தீதுரு நட்சத்திர எச்சரிக்கை</h3>
+              </div>
+              <p>
+                இன்று{" "}
+                <strong>
+                  {rsNakshatraInfo.nakshatra_name_tamil ||
+                    rsNakshatraInfo.nakshatra_name}
+                </strong>{" "}
+                நட்சத்திரம் தீதுரு நட்சத்திரமாக கருதப்படுகிறது.
+              </p>
+              <div className="warning-items">
+                {rsNakshatraInfo.avoid_medical && (
+                  <div className="warning-item">
+                    <span role="img" aria-label="Medical">
+                      💊
+                    </span>
+                    <span>
+                      மருத்துவ சிகிச்சை அல்லது புதிய மருந்துகள் தொடங்குவதை
+                      தவிர்க்கவும்
+                    </span>
+                  </div>
+                )}
+
+                {rsNakshatraInfo.avoid_travel && (
+                  <div className="warning-item">
+                    <span role="img" aria-label="Travel">
+                      ✈️
+                    </span>
+                    <span>பயணம் மேற்கொள்வதை தவிர்க்கவும்</span>
+                  </div>
+                )}
+
+                {rsNakshatraInfo.avoid_financial && (
+                  <div className="warning-item">
+                    <span role="img" aria-label="Financial">
+                      💰
+                    </span>
+                    <span>
+                      கடன் வாங்குதல் அல்லது கொடுத்தல் போன்ற பண பரிவர்த்தனைகளை
+                      தவிர்க்கவும்
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="panel">
               <h2>⏳ Loading panchangam data...</h2>
@@ -113,7 +182,11 @@ export default function Home() {
                 </div>
                 <div className="info-item">
                   <span className="label">🌟 Main Nakshatra: </span>
-                  {panchangamData.main_nakshatra || "N/A"}
+                  <span>
+                    {panchangamData.main_nakshatra || "N/A"}
+                    {/* Add RS badge if applicable */}
+                    {rsNakshatraInfo && <span className="rs-badge">RS</span>}
+                  </span>
                 </div>
                 <div className="info-item">
                   <span className="label">🌅 Sunrise: </span>
@@ -211,6 +284,66 @@ export default function Home() {
            font-weight: 600;
            color: #333;
            margin-right: 8px;
+         }
+
+         /* RS Nakshatra Warning Styles */
+         .rs-nakshatra-warning {
+           background-color: #ffebee;
+           border: 1px solid #e57373;
+           border-radius: 8px;
+           padding: 15px;
+           margin-bottom: 20px;
+           box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+         }
+
+         .warning-header {
+           display: flex;
+           align-items: center;
+           margin-bottom: 12px;
+         }
+
+         .warning-icon {
+           font-size: 22px;
+           margin-right: 10px;
+         }
+
+         .warning-header h3 {
+           margin: 0;
+           color: #c62828;
+           font-size: 18px;
+           font-weight: 600;
+         }
+
+         .warning-items {
+           display: flex;
+           flex-direction: column;
+           gap: 10px;
+           margin-top: 12px;
+           background-color: rgba(255, 255, 255, 0.5);
+           border-radius: 6px;
+           padding: 10px;
+         }
+
+         .warning-item {
+           display: flex;
+           align-items: center;
+           gap: 10px;
+         }
+
+         .warning-item span:first-child {
+           font-size: 18px;
+         }
+
+         .rs-badge {
+           background-color: #d32f2f;
+           color: white;
+           font-size: 10px;
+           padding: 2px 6px;
+           border-radius: 10px;
+           margin-left: 8px;
+           display: inline-block;
+           vertical-align: middle;
+           font-weight: bold;
          }
       `}</style>
     </div>
