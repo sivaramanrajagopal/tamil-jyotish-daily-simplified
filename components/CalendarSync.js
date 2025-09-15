@@ -21,8 +21,8 @@ export default function CalendarSync() {
 
   const checkExistingSubscription = async () => {
     try {
-      // This would typically get the user ID from auth context
-      const userId = 'temp-user-id'; // Replace with actual user ID
+      // Generate a unique user ID for this session
+      const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
       
       const response = await fetch(`/api/calendar/subscription?user_id=${userId}`);
       if (response.ok) {
@@ -40,7 +40,7 @@ export default function CalendarSync() {
   const createSubscription = async () => {
     setLoading(true);
     try {
-      const userId = 'temp-user-id'; // Replace with actual user ID
+      const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
       
       const response = await fetch('/api/calendar/subscription', {
         method: 'POST',

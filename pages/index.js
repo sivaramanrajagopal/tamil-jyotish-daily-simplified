@@ -1,5 +1,5 @@
 // pages/index.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import { supabase } from "../lib/supabaseClient";
 import CalendarSync from "../components/CalendarSync";
@@ -118,7 +118,7 @@ export default function Home() {
     .map((name) => nakshatraAlternatives[name] || [])
     .flat();
 
-  const fetchPanchangamData = async (date) => {
+  const fetchPanchangamData = useCallback(async (date) => {
     setLoading(true);
     const formattedDate = date.toISOString().split("T")[0];
     const { data, error } = await supabase
@@ -264,7 +264,7 @@ export default function Home() {
     }
 
     setLoading(false);
-  };
+  }, []);
 
   const handleDateChange = (e) => {
     const newDate = new Date(e.target.value);
