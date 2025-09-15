@@ -3,6 +3,10 @@ import { supabase } from '../../../lib/supabaseClient';
 
 // Webcal subscription endpoint for real-time calendar updates
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log('Webcal endpoint accessed:', req.url);
+  console.log('Method:', req.method);
+  console.log('Query params:', req.query);
+  
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
