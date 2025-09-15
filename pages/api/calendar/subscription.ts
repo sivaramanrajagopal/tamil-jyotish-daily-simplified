@@ -82,8 +82,18 @@ async function createSubscription(req: NextApiRequest, res: NextApiResponse) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     // Ensure HTTPS for production webcal URLs
     const domain = baseUrl.replace(/^https?:\/\//, '');
+    // Force HTTPS for production (Vercel domains)
+    const isProduction = domain.includes('vercel.app') || domain.includes('netlify.app');
+    const secureBaseUrl = isProduction ? `https://${domain}` : baseUrl;
     const webcalUrl = `webcal://${domain}/api/calendar/webcal?token=${subscription_token}`;
-    const icsUrl = `${baseUrl}/api/calendar/ics?token=${subscription_token}`;
+    const icsUrl = `${secureBaseUrl}/api/calendar/ics?token=${subscription_token}`;
+    
+    // Debug logging
+    console.log('Base URL:', baseUrl);
+    console.log('Domain:', domain);
+    console.log('Is Production:', isProduction);
+    console.log('Webcal URL:', webcalUrl);
+    console.log('ICS URL:', icsUrl);
 
     return res.status(201).json({
       subscription_id: subscription.id,
@@ -147,8 +157,11 @@ async function getSubscription(req: NextApiRequest, res: NextApiResponse) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     // Ensure HTTPS for production webcal URLs
     const domain = baseUrl.replace(/^https?:\/\//, '');
+    // Force HTTPS for production (Vercel domains)
+    const isProduction = domain.includes('vercel.app') || domain.includes('netlify.app');
+    const secureBaseUrl = isProduction ? `https://${domain}` : baseUrl;
     const webcalUrl = `webcal://${domain}/api/calendar/webcal?token=${subscription.subscription_token}`;
-    const icsUrl = `${baseUrl}/api/calendar/ics?token=${subscription.subscription_token}`;
+    const icsUrl = `${secureBaseUrl}/api/calendar/ics?token=${subscription.subscription_token}`;
 
     return res.status(200).json({
       subscription,
