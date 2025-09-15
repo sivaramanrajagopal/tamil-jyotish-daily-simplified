@@ -80,7 +80,9 @@ async function createSubscription(req: NextApiRequest, res: NextApiResponse) {
 
     // Generate webcal URL
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const webcalUrl = `webcal://${baseUrl.replace(/^https?:\/\//, '')}/api/calendar/webcal?token=${subscription_token}`;
+    // Ensure HTTPS for production webcal URLs
+    const domain = baseUrl.replace(/^https?:\/\//, '');
+    const webcalUrl = `webcal://${domain}/api/calendar/webcal?token=${subscription_token}`;
     const icsUrl = `${baseUrl}/api/calendar/ics?token=${subscription_token}`;
 
     return res.status(201).json({
@@ -143,7 +145,9 @@ async function getSubscription(req: NextApiRequest, res: NextApiResponse) {
 
     // Generate URLs
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const webcalUrl = `webcal://${baseUrl.replace(/^https?:\/\//, '')}/api/calendar/webcal?token=${subscription.subscription_token}`;
+    // Ensure HTTPS for production webcal URLs
+    const domain = baseUrl.replace(/^https?:\/\//, '');
+    const webcalUrl = `webcal://${domain}/api/calendar/webcal?token=${subscription.subscription_token}`;
     const icsUrl = `${baseUrl}/api/calendar/ics?token=${subscription.subscription_token}`;
 
     return res.status(200).json({

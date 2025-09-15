@@ -208,6 +208,10 @@ export default function Home() {
                   <span className="label">✅ Abhijit Muhurta: </span>
                   {panchangamData.abhijit_muhurta || "N/A"}
                 </div>
+                <div className="info-item">
+                  <span className="label">🔄 Chandrashtama for: </span>
+                  {panchangamData.chandrashtama_for || "N/A"}
+                </div>
               </div>
             </div>
           )}

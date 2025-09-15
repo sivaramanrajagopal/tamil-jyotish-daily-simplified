@@ -91,7 +91,7 @@ export default function CalendarSync() {
         className="calendar-sync-toggle"
         style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
+          color: 'white !important',
           border: 'none',
           padding: '12px 24px',
           borderRadius: '8px',
@@ -100,7 +100,11 @@ export default function CalendarSync() {
           fontWeight: 'bold',
           margin: '10px 0',
           boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-          transition: 'all 0.3s ease'
+          transition: 'all 0.3s ease',
+          display: 'block',
+          width: '100%',
+          maxWidth: '300px',
+          margin: '10px auto'
         }}
       >
         📅 Calendar Sync
@@ -113,13 +117,16 @@ export default function CalendarSync() {
           borderRadius: '8px',
           padding: '20px',
           margin: '10px 0',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+          boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+          color: '#333 !important',
+          fontSize: '14px',
+          lineHeight: '1.5'
         }}>
           <h3 style={{ marginTop: 0, color: '#333' }}>📅 Tamil Panchangam Calendar Sync</h3>
           
           {!subscription ? (
             <div>
-              <p style={{ color: '#666', marginBottom: '20px' }}>
+              <p style={{ color: '#666 !important', marginBottom: '20px', fontSize: '14px' }}>
                 Sync Tamil Panchangam events with your calendar app (Outlook, Apple Calendar, Google Calendar, etc.)
               </p>
               
@@ -127,7 +134,7 @@ export default function CalendarSync() {
                 <h4 style={{ color: '#333', marginBottom: '10px' }}>Calendar Preferences:</h4>
                 
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_auspicious_times}
@@ -138,7 +145,7 @@ export default function CalendarSync() {
                 </div>
                 
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_inauspicious_times}
@@ -149,7 +156,7 @@ export default function CalendarSync() {
                 </div>
                 
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_special_days}
@@ -160,7 +167,7 @@ export default function CalendarSync() {
                 </div>
                 
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_rs_warnings}
@@ -171,7 +178,7 @@ export default function CalendarSync() {
                 </div>
                 
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_chandrashtama}
