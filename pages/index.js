@@ -4,6 +4,121 @@ import Head from "next/head";
 import { supabase } from "../lib/supabaseClient";
 import CalendarSync from "../components/CalendarSync";
 
+// Complete mapping of English to Tamil nakshatra names, including alternatives
+const nakshatraEnglishToTamil = {
+  Ashwini: "அசுவினி",
+  Bharani: "பரணி",
+  Krittika: "கார்த்திகை",
+  Rohini: "ரோகிணி",
+  Mrigasira: "மிருகசீரிஷம்",
+  Ardra: "திருவாதிரை",
+  Punarvasu: "புனர்பூசம்",
+  Pushya: "பூசம்",
+  Ashlesha: "ஆயில்யம்",
+  Magha: "மகம்",
+  "Purva Phalguni": "பூரம்",
+  "Uttara Phalguni": "உத்திரம்",
+  Hasta: "ஹஸ்தம்",
+  Chitra: "சித்திரை",
+  Swati: "சுவாதி",
+  Swathi: "ஸ்வாதி", // Added specific mapping for Swathi with alternative spelling
+  Vishakha: "விசாகம்",
+  Anuradha: "அனுஷம்",
+  Jyeshtha: "கேட்டை",
+  Mula: "மூலம்",
+  "Purva Ashadha": "பூராடம்",
+  "Uttara Ashadha": "உத்திராடம்",
+  Shravana: "திருவோணம்",
+  Dhanishta: "அவிட்டம்",
+  Shatabhisha: "சதயம்",
+  "Purva Bhadrapada": "பூரட்டாதி",
+  "Uttara Bhadrapada": "உத்திரட்டாதி",
+  Revati: "ரேவதி",
+  // Alternative spellings and variations
+  "Mrigasira": "மிருகசீரிடம்",
+  "Mrigashira": "மிருகசீரிடம்",
+  "Mrigashirsha": "மிருகசீரிடம்",
+  "Arudra": "திருவாதிரை",
+  "Punarvasu": "புனர்பூசம்",
+  "Punarpusam": "புனர்பூசம்",
+  "Pushyami": "பூசம்",
+  "Ashlesha": "ஆயில்யம்",
+  "Ayilyam": "ஆயில்யம்",
+  "Makha": "மகம்",
+  "Magha": "மகம்",
+  "Purva Phalguni": "பூரம்",
+  "Pooram": "பூரம்",
+  "Uttara Phalguni": "உத்திரம்",
+  "Uthiram": "உத்திரம்",
+  "Hastam": "ஹஸ்தம்",
+  "Chithira": "சித்திரை",
+  "Chithirai": "சித்திரை",
+  "Swathi": "சுவாதி",
+  "Visakha": "விசாகம்",
+  "Vishakam": "விசாகம்",
+  "Anuradha": "அனுஷம்",
+  "Anusham": "அனுஷம்",
+  "Jyeshta": "கேட்டை",
+  "Kettai": "கேட்டை",
+  "Moolam": "மூலம்",
+  "Purva Ashadha": "பூராடம்",
+  "Pooradam": "பூராடம்",
+  "Uttara Ashadha": "உத்திராடம்",
+  "Uthirattadhi": "உத்திராடம்",
+  "Shravana": "திருவோணம்",
+  "Thiruvonam": "திருவோணம்",
+  "Dhanishta": "அவிட்டம்",
+  "Avittam": "அவிட்டம்",
+  "Shatabhisha": "சதயம்",
+  "Sadayam": "சதயம்",
+  "Purva Bhadrapada": "பூரட்டாதி",
+  "Poorattadhi": "பூரட்டாதி",
+  "Uttara Bhadrapada": "உத்திரட்டாதி",
+  "Uthirattadhi": "உத்திரட்டாதி",
+  "Revati": "ரேவதி",
+  "Revathi": "ரேவதி"
+};
+
+// RS Nakshatra Tamil names
+const rsNakshatraTamilNames = [
+  "அசுவினி", "பரணி", "கார்த்திகை", "ரோகிணி", "மிருகசீரிடம்", "திருவாதிரை",
+  "புனர்பூசம்", "பூசம்", "ஆயில்யம்", "மகம்", "பூரம்", "உத்திரம்",
+  "ஹஸ்தம்", "சித்திரை", "சுவாதி", "விசாகம்", "அனுஷம்", "கேட்டை",
+  "மூலம்", "பூராடம்", "உத்திராடம்", "திருவோணம்", "அவிட்டம்", "சதயம்",
+  "பூரட்டாதி", "உத்திரட்டாதி", "ரேவதி"
+];
+
+// Alternative spellings for each RS Nakshatra
+const nakshatraAlternatives = {
+  "அசுவினி": ["அசுவினி", "அசுவினி"],
+  "பரணி": ["பரணி", "பரணி"],
+  "கார்த்திகை": ["கார்த்திகை", "கார்த்திகை"],
+  "ரோகிணி": ["ரோகிணி", "ரோகிணி"],
+  "மிருகசீரிடம்": ["மிருகசீரிடம்", "மிருகசீரிஷம்", "மிருகசீரிடம்"],
+  "திருவாதிரை": ["திருவாதிரை", "திருவாதிரை"],
+  "புனர்பூசம்": ["புனர்பூசம்", "புனர்பூசம்"],
+  "பூசம்": ["பூசம்", "பூசம்"],
+  "ஆயில்யம்": ["ஆயில்யம்", "ஆயில்யம்"],
+  "மகம்": ["மகம்", "மகம்"],
+  "பூரம்": ["பூரம்", "பூரம்"],
+  "உத்திரம்": ["உத்திரம்", "உத்திரம்"],
+  "ஹஸ்தம்": ["ஹஸ்தம்", "ஹஸ்தம்"],
+  "சித்திரை": ["சித்திரை", "சித்திரை"],
+  "சுவாதி": ["சுவாதி", "ஸ்வாதி"],
+  "விசாகம்": ["விசாகம்", "விசாகம்"],
+  "அனுஷம்": ["அனுஷம்", "அனுஷம்"],
+  "கேட்டை": ["கேட்டை", "கேட்டை"],
+  "மூலம்": ["மூலம்", "மூலம்"],
+  "பூராடம்": ["பூராடம்", "பூராடம்"],
+  "உத்திராடம்": ["உத்திராடம்", "உத்திராடம்"],
+  "திருவோணம்": ["திருவோணம்", "திருவோணம்"],
+  "அவிட்டம்": ["அவிட்டம்", "அவிட்டம்"],
+  "சதயம்": ["சதயம்", "சதயம்"],
+  "பூரட்டாதி": ["பூரட்டாதி", "பூரட்டாதி"],
+  "உத்திரட்டாதி": ["உத்திரட்டாதி", "உத்திரட்டாதி"],
+  "ரேவதி": ["ரேவதி", "ரேவதி"]
+};
+
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [panchangamData, setPanchangamData] = useState(null);
@@ -21,63 +136,11 @@ export default function Home() {
     fetchPanchangamData(selectedDate);
   }, [selectedDate, fetchPanchangamData]);
 
-  // Complete mapping of English to Tamil nakshatra names, including alternatives
-  const nakshatraEnglishToTamil = {
-    Ashwini: "அசுவினி",
-    Bharani: "பரணி",
-    Krittika: "கார்த்திகை",
-    Rohini: "ரோகிணி",
-    Mrigasira: "மிருகசீரிஷம்",
-    Ardra: "திருவாதிரை",
-    Punarvasu: "புனர்பூசம்",
-    Pushya: "பூசம்",
-    Ashlesha: "ஆயில்யம்",
-    Magha: "மகம்",
-    "Purva Phalguni": "பூரம்",
-    "Uttara Phalguni": "உத்திரம்",
-    Hasta: "ஹஸ்தம்",
-    Chitra: "சித்திரை",
-    Swati: "சுவாதி",
-    Swathi: "ஸ்வாதி", // Added specific mapping for Swathi with alternative spelling
-    Vishakha: "விசாகம்",
-    Anuradha: "அனுஷம்",
-    Jyeshtha: "கேட்டை",
-    Mula: "மூலம்",
-    "Purva Ashadha": "பூராடம்",
-    "Uttara Ashadha": "உத்திராடம்",
-    Shravana: "திருவோணம்",
-    Dhanishta: "அவிட்டம்",
-    Shatabhisha: "சதயம்",
-    "Purva Bhadrapada": "பூரட்டாதி",
-    "Uttara Bhadrapada": "உத்திரட்டாதி",
-    Revati: "ரேவதி",
-  };
-
   // Reverse mapping for Tamil to English (helpful for detection)
   const nakshatraTamilToEnglish = {};
   Object.entries(nakshatraEnglishToTamil).forEach(([english, tamil]) => {
     nakshatraTamilToEnglish[tamil] = english;
   });
-
-  // Alternative spellings for each nakshatra
-  const nakshatraAlternatives = {
-    // Primary Tamil : [Alternative spellings]
-    அசுவினி: ["அஸ்வினி", "அச்வினி"],
-    பரணி: ["பரநி"],
-    கார்த்திகை: ["கிருத்திகை", "கிருத்திகா", "கார்திகை"],
-    திருவாதிரை: ["திருவாதிரா", "ஆர்திரா", "ஆர்த்ரா"],
-    ஆயில்யம்: ["ஆஷ்லேஷா", "ஆஸ்லேஷா", "அஸ்லேசா"],
-    ஹஸ்தம்: ["அஸ்தம்", "ஹஸ்த"],
-    சித்திரை: ["சித்ரா", "சித்ர"],
-    சுவாதி: ["ஸ்வாதி", "ஸ்வாதீ"],
-    ஸ்வாதி: ["சுவாதி", "ஸ்வாதீ", "Swati", "Swathi"], // Added key for the alternative
-    விசாகம்: ["விசாக", "விசாகா", "விஷாகம்"],
-    கேட்டை: ["ஜ்யேஷ்டா", "ஜேஷ்டா", "ஜ்யேஷ்ட"],
-    பூராடம்: ["பூர்வாஷாடா", "பூர்வாஷாட", "பூர்வ அஷாடா"],
-    உத்திராடம்: ["உத்தராஷாடா", "உத்தராஷாட", "உத்தர அஷாடா"],
-    பூரட்டாதி: ["பூர்வ பத்ரபதா", "பூர்வா பாத்ரபதா"],
-    உத்திரட்டாதி: ["உத்தர பத்ரபதா", "உத்தரா பாத்ரபதா"],
-  };
 
   // Mapping for RS Nakshatra group - the 12 nakshatras that should show warnings
   const rsNakshatraGroup = [
@@ -94,23 +157,6 @@ export default function Home() {
     "Jyeshtha",
     "Purva Ashadha",
     "Purva Bhadrapada",
-  ];
-
-  // Tamil names for RS Nakshatras
-  const rsNakshatraTamilNames = [
-    "பரணி",
-    "கார்த்திகை",
-    "திருவாதிரை",
-    "ஆயில்யம்",
-    "மகம்",
-    "பூரம்",
-    "சித்திரை",
-    "சுவாதி",
-    "ஸ்வாதி",
-    "விசாகம்",
-    "கேட்டை",
-    "பூராடம்",
-    "பூரட்டாதி",
   ];
 
   // All alternative spellings for RS Nakshatras, flattened into one array
