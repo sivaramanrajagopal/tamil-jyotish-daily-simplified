@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import { supabase } from "../lib/supabaseClient";
 import { getRSNakshatraInfo } from "../lib/nakshatraUtils";
+import CalendarSync from "../components/CalendarSync";
 
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -102,6 +103,9 @@ export default function Home() {
           </span>{" "}
           தமிழில் வாசிக்க (Read in Tamil)
         </button>
+
+        {/* Calendar Sync Component */}
+        <CalendarSync />
       </header>
 
         <main>
