@@ -26,7 +26,63 @@ export default function Home() {
         setPanchangamData(null);
         setRsNakshatraInfo(null);
       } else {
-        setPanchangamData(data);
+        // Fetch nakshatra yogam data
+        try {
+          const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
+          const { data: yogamData, error: yogamError } = await supabase.rpc(
+            "get_nakshatra_yogam",
+            {
+              nakshatra_name: data.main_nakshatra,
+              day_name: dayOfWeek,
+            },
+          );
+
+          if (yogamError) {
+            console.error("Error fetching nakshatra yogam:", yogamError);
+          }
+
+          // Check moon phase from tithi
+          let moonPhase = {
+            is_valar_pirai: false,
+            is_thei_pirai: false,
+          };
+
+          // Parse tithi data to determine moon phase
+          if (data.tithi) {
+            let tithiData;
+            if (typeof data.tithi === "string") {
+              try {
+                tithiData = JSON.parse(data.tithi);
+              } catch (e) {
+                console.error("Error parsing tithi JSON:", e);
+              }
+            } else {
+              tithiData = data.tithi;
+            }
+
+            if (Array.isArray(tithiData)) {
+              // Check for Shukla Paksha (growing moon)
+              moonPhase.is_valar_pirai = tithiData.some(
+                (t) => t.paksha === "சுக்ல பக்ஷ",
+              );
+
+              // Check for Krishna Paksha (waning moon)
+              moonPhase.is_thei_pirai = tithiData.some(
+                (t) => t.paksha === "கிருஷ்ண பக்ஷ",
+              );
+            }
+          }
+
+          setPanchangamData({
+            ...data,
+            nakshatra_yogam: yogamData,
+            is_valar_pirai: moonPhase.is_valar_pirai,
+            is_thei_pirai: moonPhase.is_thei_pirai,
+          });
+        } catch (e) {
+          console.error("Error fetching additional data:", e);
+          setPanchangamData(data);
+        }
         
         // Check for RS Nakshatra
         if (data && data.main_nakshatra) {
@@ -190,6 +246,17 @@ export default function Home() {
                     {panchangamData.main_nakshatra || "N/A"}
                     {/* Add RS badge if applicable */}
                     {rsNakshatraInfo && <span className="rs-badge">RS</span>}
+                  </span>
+                </div>
+                <div className="info-item">
+                  <span className="label">🔮 Nakshatra Yogam: </span>
+                  {panchangamData.nakshatra_yogam || "N/A"}
+                </div>
+                <div className="info-item">
+                  <span className="label">🌗 Moon Phase: </span>
+                  <span>
+                    {panchangamData.is_valar_pirai ? "வளர்பிறை (Waxing Moon)" : 
+                     panchangamData.is_thei_pirai ? "தேய்பிறை (Waning Moon)" : "N/A"}
                   </span>
                 </div>
                 <div className="info-item">

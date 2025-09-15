@@ -85,104 +85,165 @@ export default function CalendarSync() {
   };
 
   return (
-    <div className="calendar-sync-container">
+    <div style={{ margin: '20px 0', textAlign: 'center' }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="calendar-sync-toggle"
         style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white !important',
+          color: 'white',
           border: 'none',
-          padding: '12px 24px',
-          borderRadius: '8px',
+          padding: '15px 30px',
+          borderRadius: '10px',
           cursor: 'pointer',
-          fontSize: '16px',
+          fontSize: '18px',
           fontWeight: 'bold',
-          margin: '10px 0',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+          margin: '10px auto',
+          boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
           transition: 'all 0.3s ease',
           display: 'block',
           width: '100%',
-          maxWidth: '300px',
-          margin: '10px auto'
+          maxWidth: '400px'
         }}
       >
         📅 Calendar Sync
       </button>
 
       {isOpen && (
-        <div className="calendar-sync-panel" style={{
+        <div style={{
           background: 'white',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          padding: '20px',
-          margin: '10px 0',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-          color: '#333 !important',
-          fontSize: '14px',
-          lineHeight: '1.5'
+          border: '2px solid #667eea',
+          borderRadius: '15px',
+          padding: '25px',
+          margin: '20px auto',
+          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+          color: '#333',
+          fontSize: '16px',
+          lineHeight: '1.6',
+          maxWidth: '600px',
+          textAlign: 'left'
         }}>
-          <h3 style={{ marginTop: 0, color: '#333' }}>📅 Tamil Panchangam Calendar Sync</h3>
+          <h3 style={{ 
+            marginTop: 0, 
+            color: '#333', 
+            fontSize: '20px',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            marginBottom: '20px'
+          }}>
+            📅 Tamil Panchangam Calendar Sync
+          </h3>
           
           {!subscription ? (
             <div>
-              <p style={{ color: '#666 !important', marginBottom: '20px', fontSize: '14px' }}>
+              <p style={{ 
+                color: '#666', 
+                marginBottom: '25px',
+                fontSize: '16px',
+                textAlign: 'center'
+              }}>
                 Sync Tamil Panchangam events with your calendar app (Outlook, Apple Calendar, Google Calendar, etc.)
               </p>
               
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ color: '#333', marginBottom: '10px' }}>Calendar Preferences:</h4>
+              <div style={{ marginBottom: '25px' }}>
+                <h4 style={{ 
+                  color: '#333', 
+                  marginBottom: '15px',
+                  fontSize: '18px',
+                  fontWeight: 'bold'
+                }}>
+                  Calendar Preferences:
+                </h4>
                 
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    color: '#333',
+                    fontSize: '16px',
+                    cursor: 'pointer'
+                  }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_auspicious_times}
                       onChange={(e) => handlePreferenceChange('include_auspicious_times', e.target.checked)}
+                      style={{ transform: 'scale(1.2)' }}
                     />
                     Include Auspicious Times (Abhijit Muhurta)
                   </label>
                 </div>
                 
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    color: '#333',
+                    fontSize: '16px',
+                    cursor: 'pointer'
+                  }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_inauspicious_times}
                       onChange={(e) => handlePreferenceChange('include_inauspicious_times', e.target.checked)}
+                      style={{ transform: 'scale(1.2)' }}
                     />
                     Include Inauspicious Times (Rahu Kalam, Yamagandam, Kuligai)
                   </label>
                 </div>
                 
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    color: '#333',
+                    fontSize: '16px',
+                    cursor: 'pointer'
+                  }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_special_days}
                       onChange={(e) => handlePreferenceChange('include_special_days', e.target.checked)}
+                      style={{ transform: 'scale(1.2)' }}
                     />
                     Include Special Days (Amavasai, Pournami, Ekadashi, etc.)
                   </label>
                 </div>
                 
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    color: '#333',
+                    fontSize: '16px',
+                    cursor: 'pointer'
+                  }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_rs_warnings}
                       onChange={(e) => handlePreferenceChange('include_rs_warnings', e.target.checked)}
+                      style={{ transform: 'scale(1.2)' }}
                     />
                     Include RS Nakshatra Warnings
                   </label>
                 </div>
                 
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333 !important', fontSize: '14px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    color: '#333',
+                    fontSize: '16px',
+                    cursor: 'pointer'
+                  }}>
                     <input
                       type="checkbox"
                       checked={preferences.include_chandrashtama}
                       onChange={(e) => handlePreferenceChange('include_chandrashtama', e.target.checked)}
+                      style={{ transform: 'scale(1.2)' }}
                     />
                     Include Chandrashtama Warnings
                   </label>
@@ -196,12 +257,13 @@ export default function CalendarSync() {
                   background: loading ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   color: 'white',
                   border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
+                  padding: '15px 30px',
+                  borderRadius: '10px',
                   cursor: loading ? 'not-allowed' : 'pointer',
-                  fontSize: '16px',
+                  fontSize: '18px',
                   fontWeight: 'bold',
-                  width: '100%'
+                  width: '100%',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                 }}
               >
                 {loading ? 'Creating...' : 'Create Calendar Subscription'}
@@ -211,22 +273,26 @@ export default function CalendarSync() {
             <div>
               <div style={{ 
                 background: '#e8f5e8', 
-                border: '1px solid #4caf50', 
-                borderRadius: '8px', 
-                padding: '15px', 
-                marginBottom: '20px' 
+                border: '2px solid #4caf50', 
+                borderRadius: '10px', 
+                padding: '20px', 
+                marginBottom: '25px' 
               }}>
-                <h4 style={{ color: '#2e7d32', margin: '0 0 10px 0' }}>✅ Calendar Subscription Active!</h4>
-                <p style={{ margin: 0, color: '#2e7d32' }}>
+                <h4 style={{ color: '#2e7d32', margin: '0 0 15px 0', fontSize: '18px' }}>
+                  ✅ Calendar Subscription Active!
+                </h4>
+                <p style={{ margin: 0, color: '#2e7d32', fontSize: '16px' }}>
                   Your Tamil Panchangam calendar is now synced. Use the links below to add to your calendar app.
                 </p>
               </div>
               
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ color: '#333', marginBottom: '10px' }}>📱 Add to Calendar App:</h4>
+              <div style={{ marginBottom: '25px' }}>
+                <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '18px' }}>
+                  📱 Add to Calendar App:
+                </h4>
                 
-                <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
                     Webcal URL (for automatic sync):
                   </label>
                   <div style={{ display: 'flex', gap: '10px' }}>
@@ -236,10 +302,11 @@ export default function CalendarSync() {
                       readOnly
                       style={{
                         flex: 1,
-                        padding: '8px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px'
+                        padding: '12px',
+                        border: '2px solid #ddd',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        color: '#333'
                       }}
                     />
                     <button
@@ -248,9 +315,10 @@ export default function CalendarSync() {
                         background: '#4caf50',
                         color: 'white',
                         border: 'none',
-                        padding: '8px 12px',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
                       }}
                     >
                       Copy
@@ -258,8 +326,8 @@ export default function CalendarSync() {
                   </div>
                 </div>
                 
-                <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
                     ICS Download URL:
                   </label>
                   <div style={{ display: 'flex', gap: '10px' }}>
@@ -269,10 +337,11 @@ export default function CalendarSync() {
                       readOnly
                       style={{
                         flex: 1,
-                        padding: '8px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px'
+                        padding: '12px',
+                        border: '2px solid #ddd',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        color: '#333'
                       }}
                     />
                     <button
@@ -281,9 +350,10 @@ export default function CalendarSync() {
                         background: '#4caf50',
                         color: 'white',
                         border: 'none',
-                        padding: '8px 12px',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
                       }}
                     >
                       Copy
@@ -294,13 +364,15 @@ export default function CalendarSync() {
               
               <div style={{ 
                 background: '#f5f5f5', 
-                border: '1px solid #ddd', 
-                borderRadius: '8px', 
-                padding: '15px',
-                marginBottom: '20px'
+                border: '2px solid #ddd', 
+                borderRadius: '10px', 
+                padding: '20px',
+                marginBottom: '25px'
               }}>
-                <h4 style={{ color: '#333', margin: '0 0 10px 0' }}>📋 Setup Instructions:</h4>
-                <ul style={{ margin: 0, paddingLeft: '20px', color: '#666' }}>
+                <h4 style={{ color: '#333', margin: '0 0 15px 0', fontSize: '18px' }}>
+                  📋 Setup Instructions:
+                </h4>
+                <ul style={{ margin: 0, paddingLeft: '25px', color: '#666', fontSize: '16px' }}>
                   <li><strong>iOS Calendar:</strong> Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar</li>
                   <li><strong>Android Calendar:</strong> Open Calendar app → Settings → Import calendar → From URL</li>
                   <li><strong>Google Calendar:</strong> Google Calendar → Settings → Import & Export → From URL</li>
@@ -318,10 +390,11 @@ export default function CalendarSync() {
                   background: '#ff6b6b',
                   color: 'white',
                   border: 'none',
-                  padding: '10px 20px',
+                  padding: '12px 25px',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '16px',
+                  fontWeight: 'bold'
                 }}
               >
                 Create New Subscription
